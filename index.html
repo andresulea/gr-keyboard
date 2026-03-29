@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GR Teclado">
+<meta name="theme-color" content="#080f09">
+<title>Teclado · Relatividad General v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+:root{
+  --bg:#080f09;--s1:#0d1a0e;--s2:#111f12;--s3:#152016;
+  --bdr:rgba(150,200,150,0.13);--bdr2:rgba(150,200,150,0.22);
+  --chalk:#ece8d5;--dim:rgba(236,232,213,0.52);--faint:rgba(236,232,213,0.2);
+  --gr:#5cb85c;--gr-d:rgba(92,184,92,0.13);--gr-b:rgba(92,184,92,0.38);
+  --go:#c9963a;--go-d:rgba(201,150,58,0.13);--go-b:rgba(201,150,58,0.38);
+  --bl:#4a9ece;--bl-d:rgba(74,158,206,0.13);--bl-b:rgba(74,158,206,0.35);
+  --vi:#9b7ecb;--vi-d:rgba(155,126,203,0.13);--vi-b:rgba(155,126,203,0.35);
+  --re:#cc5555;--re-d:rgba(200,80,80,0.13);
+  --mono:'JetBrains Mono',monospace;--serif:'Spectral',Georgia,serif;
+  --r:8px;--rr:10px
+}
+html,body{height:100%;background:var(--bg);color:var(--chalk);font-family:var(--serif);overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:640px;margin:0 auto;position:relative}
+
+/* Noise texture */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.06;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app>*{position:relative;z-index:1}
+
+/* ── Header ── */
+.hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.hdr-icon{font-family:var(--mono);font-size:24px;color:var(--gr);
+  text-shadow:0 0 16px rgba(92,184,92,.4);line-height:1}
+.hdr-t h1{font-size:14px;font-weight:600;letter-spacing:.015em}
+.hdr-t p{font-size:10.5px;color:var(--dim);font-style:italic;margin-top:1px}
+.hdr-badge{margin-left:auto;font-size:9px;background:var(--gr-d);border:1px solid var(--gr-b);
+  color:var(--gr);padding:3px 8px;border-radius:12px;letter-spacing:.06em;font-family:var(--mono)}
+
+/* ── Composer ── */
+.cmp{padding:9px 12px 8px;background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0}
+#ta{width:100%;min-height:72px;max-height:120px;background:var(--bg);
+  border:1px solid var(--bdr);border-radius:var(--r);
+  color:var(--chalk);font-family:var(--mono);font-size:16px;line-height:1.55;
+  padding:9px 11px;resize:none;outline:none;transition:border-color .18s;overflow-y:auto}
+#ta:focus{border-color:var(--gr-b)}
+#ta::placeholder{color:var(--faint);font-family:var(--serif);font-style:italic;font-size:13px}
+.acts{display:flex;gap:6px;margin-top:7px}
+.btn{flex:1;padding:8px 6px;border:1px solid var(--bdr);border-radius:var(--r);
+  background:var(--s2);color:var(--chalk);font-family:var(--serif);
+  font-size:12px;cursor:pointer;transition:all .1s;text-align:center;letter-spacing:.01em}
+.btn:active{transform:scale(.93)}
+.b-copy{background:var(--gr-d);border-color:var(--gr-b);color:var(--gr);font-weight:600}
+.b-ai{background:var(--go-d);border-color:var(--go-b);color:var(--go)}
+.b-clr:active{background:var(--re-d)}
+.b-bs{background:var(--s3);min-width:46px;flex:0 0 46px;font-size:16px}
+
+/* ── AI Panel ── */
+.aip{background:var(--s1);border-bottom:1px solid var(--go-b);
+  padding:11px 13px;display:none;max-height:200px;overflow-y:auto;flex-shrink:0}
+.aip.on{display:block}
+.aip-h{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--go);margin-bottom:7px}
+.aip-t{font-size:13px;line-height:1.7;color:var(--chalk)}
+.dots{display:flex;gap:5px;align-items:center;padding:4px 0}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--go);
+  animation:pu 1.1s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.18s}.dot:nth-child(3){animation-delay:.36s}
+@keyframes pu{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:1;transform:scale(1)}}
+
+/* ── Tabs ── */
+.tabbar{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0;gap:1px;padding:0 4px}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:9px 11px;font-size:11px;color:var(--dim);
+  cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;
+  font-family:var(--serif);letter-spacing:.01em}
+.tab.on{color:var(--gr);border-bottom-color:var(--gr);font-weight:600}
+.tab-bh.on{color:var(--go);border-bottom-color:var(--go)}
+.tab-gw.on{color:var(--bl);border-bottom-color:var(--bl)}
+.tab-co.on{color:var(--vi);border-bottom-color:var(--vi)}
+
+/* ── Panels ── */
+.panels{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 10px 28px}
+.panel{display:none}.panel.on{display:block}
+.sec{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--faint);margin:12px 0 6px 2px}
+.sec:first-child{margin-top:2px}
+.sec.go{color:rgba(201,150,58,.5)}
+.sec.bl{color:rgba(74,158,206,.4)}
+.sec.vi{color:rgba(155,126,203,.4)}
+
+/* ── Symbol Grid ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px}
+.grid.w{grid-template-columns:repeat(auto-fill,minmax(62px,1fr))}
+.grid.ww{grid-template-columns:repeat(auto-fill,minmax(82px,1fr))}
+.s{height:44px;display:flex;align-items:center;justify-content:center;
+  background:var(--s2);border:1px solid var(--bdr);border-radius:7px;
+  font-family:var(--mono);font-size:18px;cursor:pointer;color:var(--chalk);
+  transition:background .08s,border-color .08s,transform .08s;
+  user-select:none;-webkit-user-select:none;padding:0 4px}
+.s.sm{font-size:11px;letter-spacing:-.02em;text-align:center;padding:2px 4px;line-height:1.25}
+.s.xsm{font-size:9.5px}
+.s:active{background:var(--gr-d);border-color:var(--gr-b);transform:scale(.88)}
+.s.go:active{background:var(--go-d);border-color:var(--go-b)}
+.s.bl:active{background:var(--bl-d);border-color:var(--bl-b)}
+.s.vi:active{background:var(--vi-d);border-color:var(--vi-b)}
+
+/* ── Expression Cards ── */
+.egrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.egrid.w1{grid-template-columns:1fr}
+.ec{padding:10px 11px;background:var(--s2);border:1px solid var(--bdr);
+  border-radius:var(--r);cursor:pointer;transition:all .1s;user-select:none;-webkit-user-select:none}
+.ec:active{background:var(--gr-d);border-color:var(--gr-b);transform:scale(.97)}
+.ec.go:active{background:var(--go-d);border-color:var(--go-b)}
+.ec.bl:active{background:var(--bl-d);border-color:var(--bl-b)}
+.ec.vi:active{background:var(--vi-d);border-color:var(--vi-b)}
+.ec-s{font-family:var(--mono);font-size:12px;color:var(--chalk);display:block;line-height:1.45}
+.ec-n{font-size:9.5px;color:var(--dim);margin-top:3px;font-style:italic;display:block}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;left:50%;
+  transform:translateX(-50%) translateY(14px);
+  background:var(--gr);color:#050d06;padding:7px 20px;border-radius:18px;
+  font-size:13px;font-weight:600;opacity:0;transition:all .22s;pointer-events:none;z-index:999;
+  font-family:var(--serif)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="hdr">
+    <span class="hdr-icon">∂</span>
+    <div class="hdr-t">
+      <h1>Relatividad General · Teclado v2</h1>
+      <p>Perlick · GR · Agujeros Negros · Ondas · Cosmología</p>
+    </div>
+    <div class="hdr-badge">PWA</div>
+  </div>
+
+  <div class="cmp">
+    <textarea id="ta" placeholder="Toca los símbolos ↓ para componer tu pregunta… luego copia y pega en Claude, ChatGPT, Gemini…"></textarea>
+    <div class="acts">
+      <button class="btn b-copy" onclick="doCopy()">⬆ Copiar</button>
+      <button class="btn b-ai"   onclick="doAI()">✦ Explicar IA</button>
+      <button class="btn b-clr"  onclick="doClear()">✕</button>
+      <button class="btn b-bs"   onclick="doBksp()">⌫</button>
+    </div>
+  </div>
+
+  <div class="aip" id="aip">
+    <div class="aip-h">✦ Explicación</div>
+    <div class="aip-t" id="aip-t"></div>
+  </div>
+
+  <div class="tabbar" id="tabbar">
+    <div class="tab on"      onclick="tab(0,this)">Griegas</div>
+    <div class="tab"         onclick="tab(1,this)">Operadores</div>
+    <div class="tab"         onclick="tab(2,this)">Índices</div>
+    <div class="tab"         onclick="tab(3,this)">Expr GR</div>
+    <div class="tab tab-bh"  onclick="tab(4,this)">☞ Ag. Negros</div>
+    <div class="tab tab-gw"  onclick="tab(5,this)">Ondas Grav.</div>
+    <div class="tab tab-co"  onclick="tab(6,this)">Cosmología</div>
+    <div class="tab"         onclick="tab(7,this)">Diacríticos</div>
+    <div class="tab"         onclick="tab(8,this)">Relaciones</div>
+    <div class="tab"         onclick="tab(9,this)">Misc</div>
+  </div>
+
+  <div class="panels">
+
+    <!-- 0 · GRIEGAS -->
+    <div class="panel on" id="p0">
+      <div class="sec">Minúsculas (Perlick usa con frecuencia)</div>
+      <div class="grid" id="g0-lo"></div>
+      <div class="sec">Mayúsculas</div>
+      <div class="grid" id="g0-up"></div>
+      <div class="sec">Variantes destacadas en los textos</div>
+      <div class="grid" id="g0-va"></div>
+    </div>
+
+    <!-- 1 · OPERADORES -->
+    <div class="panel" id="p1">
+      <div class="sec">Diferencial / nabla</div>
+      <div class="grid" id="g1-dif"></div>
+      <div class="sec">Derivadas con subíndice (texto)</div>
+      <div class="grid w" id="g1-dsub"></div>
+      <div class="sec">Derivadas totales / Lagrangianas (Perlick §2–5)</div>
+      <div class="grid w" id="g1-dt"></div>
+      <div class="sec">Integrales y sumas</div>
+      <div class="grid" id="g1-int"></div>
+    </div>
+
+    <!-- 2 · ÍNDICES TEXTO -->
+    <div class="panel" id="p2">
+      <div class="sec">Superíndices Unicode</div>
+      <div class="grid" id="g2-sup"></div>
+      <div class="sec">Subíndices Unicode</div>
+      <div class="grid" id="g2-sub"></div>
+      <div class="sec">Pares de índices frecuentes (Perlick)</div>
+      <div class="grid ww" id="g2-par"></div>
+      <div class="sec">Índices griego sueltos (^ / _)</div>
+      <div class="grid w" id="g2-idx"></div>
+    </div>
+
+    <!-- 3 · EXPRESIONES GR -->
+    <div class="panel" id="p3">
+      <div class="sec">Métricas y tensores fundamentales</div>
+      <div class="egrid" id="e3-bas"></div>
+      <div class="sec">Ecuaciones de campo</div>
+      <div class="egrid" id="e3-efe"></div>
+      <div class="sec">Geodésicas y derivada covariante</div>
+      <div class="egrid" id="e3-geo"></div>
+    </div>
+
+    <!-- 4 · AGUJEROS NEGROS -->
+    <div class="panel" id="p4">
+      <div class="sec go">Schwarzschild</div>
+      <div class="egrid" id="e4-sch"></div>
+      <div class="sec go">Kerr y Kerr-Newman</div>
+      <div class="egrid" id="e4-kerr"></div>
+      <div class="sec go">Horizontes y termodinámica</div>
+      <div class="egrid" id="e4-thermo"></div>
+      <div class="sec go">Símbolos clave</div>
+      <div class="grid w" id="g4-sym"></div>
+    </div>
+
+    <!-- 5 · ONDAS GRAVITACIONALES -->
+    <div class="panel" id="p5">
+      <div class="sec bl">Campo linealizado (Perlick §7 / GW notes)</div>
+      <div class="egrid" id="e5-lin"></div>
+      <div class="sec bl">Detectores y fuentes</div>
+      <div class="egrid" id="e5-det"></div>
+      <div class="sec bl">Símbolos y notación GW</div>
+      <div class="grid w" id="g5-sym"></div>
+    </div>
+
+    <!-- 6 · COSMOLOGÍA -->
+    <div class="panel" id="p6">
+      <div class="sec vi">Robertson-Walker y Friedmann (Perlick §3)</div>
+      <div class="egrid" id="e6-rw"></div>
+      <div class="sec vi">Parámetros cosmológicos</div>
+      <div class="egrid" id="e6-par"></div>
+      <div class="sec vi">Símbolos cosmológicos</div>
+      <div class="grid w" id="g6-sym"></div>
+    </div>
+
+    <!-- 7 · DIACRÍTICOS -->
+    <div class="panel" id="p7">
+      <div class="sec">Notación de Perlick con puntos / primas (ẋ, ẍ, x′)</div>
+      <div class="grid ww" id="g7-dot"></div>
+      <div class="sec">Letras con sombrero, tilde, barra (h̄, ã, x̂)</div>
+      <div class="grid ww" id="g7-hat"></div>
+      <div class="sec">Primas y modificadores genéricos</div>
+      <div class="grid" id="g7-pr"></div>
+    </div>
+
+    <!-- 8 · RELACIONES -->
+    <div class="panel" id="p8">
+      <div class="sec">Igualdades y comparaciones</div>
+      <div class="grid" id="g8-eq"></div>
+      <div class="sec">Flechas y mapeos</div>
+      <div class="grid" id="g8-arr"></div>
+      <div class="sec">Lógica, conjuntos, membresía</div>
+      <div class="grid" id="g8-log"></div>
+    </div>
+
+    <!-- 9 · MISC -->
+    <div class="panel" id="p9">
+      <div class="sec">Operaciones aritméticas y álgebra</div>
+      <div class="grid" id="g9-ops"></div>
+      <div class="sec">Constantes físicas (abrev. texto)</div>
+      <div class="grid w" id="g9-const"></div>
+      <div class="sec">Paréntesis y delimitadores</div>
+      <div class="grid" id="g9-del"></div>
+      <div class="sec">Números especiales y unidades</div>
+      <div class="grid" id="g9-num"></div>
+      <div class="sec">Puntuación y estructura</div>
+      <div class="grid" id="g9-pun"></div>
+    </div>
+
+  </div><!-- /panels -->
+</div><!-- /app -->
+
+<div class="toast" id="toast">¡Copiado! — pega en cualquier IA ✓</div>
+
+<script>
+/* ─── Data ─────────────────────────────────────────────────────────── */
+const DATA = {
+  // 0 Griegas
+  'g0-lo':  ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','ς','τ','υ','φ','χ','ψ','ω'],
+  'g0-up':  ['Α','Β','Γ','Δ','Ε','Ζ','Η','Θ','Ι','Κ','Λ','Μ','Ν','Ξ','Ο','Π','Ρ','Σ','Τ','Υ','Φ','Χ','Ψ','Ω'],
+  'g0-va':  ['ϑ','ϕ','ϵ','ϱ','ϰ','ϖ','ℓ','ƛ','ı'],
+
+  // 1 Operadores
+  'g1-dif':  ['∂','∇','□','d','δ','D','Δ','∞','℃'],
+  'g1-dsub': ['∂_μ','∂_ν','∂_ρ','∂_σ','∂_τ','∂_λ','∂/∂t','∂/∂r','∂/∂x','∂/∂y','∂/∂z','∂/∂φ','∂/∂ϑ','∇_μ','∇_ν','∇_μ∇^μ'],
+  'g1-dt':   ['d/dτ','d/ds','d/dt','d²/dτ²','d²/ds²','ẋ^μ','ẍ^μ','dx^μ/dτ','dx^μ/ds','dU^μ/dτ','L(x,ẋ)'],
+  'g1-int':  ['∫','∬','∭','∮','∑','∏','√','∛'],
+
+  // 2 Índices
+  'g2-sup':  ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹','⁺','⁻','ᵅ','ᵝ','ᵞ','ᵟ','ᵘ','ᵛ','ⁱ','ʲ','ˡ','ᵐ','ⁿ','ˢ','ʳ'],
+  'g2-sub':  ['₀','₁','₂','₃','₄','₅','₆','₇','₈','₉','₊','₋','ₐ','ᵢ','ⱼ','ₖ','ₗ','ₘ','ₙ','ₒ','ₚ','ᵣ','ₛ','ₜ','ᵤ','ᵥ'],
+  'g2-par':  ['^μν','^ρσ','^αβ','^μρ','^νσ','_μν','_ρσ','_αβ','_λρ','μνρσ','_μνρσ','^μ_ν','^ρ_σ','_μ^ν'],
+  'g2-idx':  ['^μ','^ν','^ρ','^σ','^λ','^τ','^α','^β','^γ','^δ','^0','^1','^2','^3',
+               '_μ','_ν','_ρ','_σ','_λ','_τ','_α','_β','_γ','_δ','_0','_1','_2','_3'],
+
+  // Símbolos extras Schwarzschild/BH
+  'g4-sym':  ['r_S','r_+','r_−','r_H','2Gm/c²','M_⊙','J','a=J/Mc','Q','κ_H','Ω_H','T_H','S_H','A_H'],
+  // Símbolos GW
+  'g5-sym':  ['h_μν','h̄_μν','γ_μν','A_+','A_×','e^+_ij','e^×_ij','κ=8πG/c⁴','ℓ_P','f_GW','λ_GW'],
+  // Símbolos cosmológicos
+  'g6-sym':  ['H','H₀','ȧ/a','q','Ω','Ω_m','Ω_Λ','Ω_r','Ω_k','ρ_c','z','a(t)','χ','d_L','d_A','t_0'],
+
+  // 7 Diacríticos
+  'g7-dot':  ['ẋ','ẏ','ż','ṙ','ṫ','ẋ^μ','ẍ^μ','ẋ^ν','ẋ^ρ','U^μ=ẋ^μ','ȧ','ä','Ḣ','ρ̇','ṗ'],
+  'g7-hat':  ['x̂','ŷ','ẑ','ĝ','n̂','ê','ℓ̂','h̄','h̄_μν','γ̄_μν','T̄_μν','ã(t)','k̃_μ','ξ̃'],
+  'g7-pr':   ['′','″','‴','⁗','x′','r′','t′','φ′','ϑ′','f′(r)','f(r)′'],
+
+  // 8 Relaciones
+  'g8-eq':   ['=','≠','≡','≈','≅','∼','≃','≤','≥','≪','≫','∝','def=',':='],
+  'g8-arr':  ['→','←','↔','⟶','⟵','⟷','⇒','⇐','⇔','↦','⟼','↑','↓','↗','↘','↕'],
+  'g8-log':  ['∀','∃','∄','∈','∉','⊂','⊃','⊆','⊇','∩','∪','∅','¬','∧','∨','⊕','⊗','⊙'],
+
+  // 9 Misc
+  'g9-ops':   ['±','∓','×','·','÷','/','^','_','|','‖','√','∛','!','%','∞'],
+  'g9-const': ['G','c','ℏ','ħ','k_B','M_P','ℓ_P','t_P','μ₀','ε₀','e','m_e','m_p','G/c²','8πG','κ=8πG/c⁴'],
+  'g9-del':   ['(',')','{','}','[',']','⟨','⟩','|·|','‖·‖','⌈','⌉','⌊','⌋'],
+  'g9-num':   ['½','⅓','⅔','¼','¾','⅛','²','³','⁴','⁻¹','⁻²','i²=−1'],
+  'g9-pun':   [',',';',':','…','+','-','*','=','"',"'",'«','»','~'],
+};
+
+/* ─── Expression data ───────────────────────────────────────────────── */
+const EXPRS = {
+  'e3-bas': [
+    {s:'g_μν',                    n:'Tensor métrico (covariante)'},
+    {s:'g^μν',                    n:'Métrica contravariante'},
+    {s:'η_μν = diag(−1,1,1,1)',   n:'Minkowski (Perlick conv.)'},
+    {s:'ds² = g_μν dx^μ dx^ν',    n:'Elemento de línea'},
+    {s:'g^μν g_νσ = δ^μ_σ',       n:'Inversa de la métrica'},
+    {s:'g = det(g_μν)',            n:'Determinante de la métrica'},
+    {s:'R^ρ_σμν',                 n:'Tensor de Riemann'},
+    {s:'R_μν = R^σ_μσν',          n:'Tensor de Ricci'},
+    {s:'R = g^μν R_μν',           n:'Escalar de Ricci'},
+    {s:'G_μν = R_μν − ½g_μν R',   n:'Tensor de Einstein'},
+    {s:'T_μν',                    n:'Tensor energía-momento'},
+    {s:'J^μ',                     n:'4-corriente'},
+  ],
+  'e3-efe': [
+    {s:'G_μν = 8πG/c⁴ T_μν',         n:'Ecuación de Einstein (sin Λ)'},
+    {s:'G_μν + Λg_μν = κ T_μν',       n:'Campo con constante cosmológica'},
+    {s:'κ = 8πG/c⁴',                  n:'Constante de acoplamiento'},
+    {s:'R_μν − ½g_μν R + Λg_μν = κ T_μν', n:'EFE completa (Perlick eq.)'},
+    {s:'R_μν = 0',                     n:'Vacío (Schwarzschild, Kerr)'},
+    {s:'∇_μ G^μν = 0',                n:'Identidad de Bianchi contraída'},
+    {s:'∇_μ T^μν = 0',                n:'Conservación energía-momento'},
+    {s:'R^ρ_σμν = ∂_μΓ^ρ_νσ − ∂_νΓ^ρ_μσ + Γ^ρ_μλΓ^λ_νσ − Γ^ρ_νλΓ^λ_μσ',
+                                       n:'Tensor Riemann explícito'},
+  ],
+  'e3-geo': [
+    {s:'ẍ^μ + Γ^μ_νσ ẋ^ν ẋ^σ = 0',   n:'Ecuación geodésica (Perlick)'},
+    {s:'L(x,ẋ) = ½g_μν ẋ^μ ẋ^ν',     n:'Lagrangiana geodésica'},
+    {s:'Γ^λ_μν = ½g^λρ(∂_μg_νρ + ∂_νg_μρ − ∂_ρg_μν)', n:'Christoffel (Perlick §4)'},
+    {s:'∇_μ X^σ = ∂_μ X^σ + Γ^σ_μν X^ν',  n:'Deriv. cov. vector contrav.'},
+    {s:'∇_μ A_σ = ∂_μ A_σ − Γ^ρ_μσ A_ρ',  n:'Deriv. cov. vector cov.'},
+    {s:'∇_μ g_νρ = 0',                n:'Compatibilidad métrica'},
+    {s:'u^μ = dx^μ/dτ',               n:'4-velocidad'},
+    {s:'g_μν u^μ u^ν = −c²',          n:'Normalización temporal'},
+    {s:'p^μ = m u^μ',                 n:'4-momento'},
+    {s:'[∇_μ, ∇_ν] V^ρ = R^ρ_σμν V^σ', n:'Conmutador de derivadas cov.'},
+  ],
+
+  // BH
+  'e4-sch': [
+    {s:"ds² = −(1−r_S/r)c²dt² + (1−r_S/r)⁻¹dr² + r²dΩ²", n:'Métrica Schwarzschild'},
+    {s:'r_S = 2Gm/c²',               n:'Radio de Schwarzschild'},
+    {s:'dΩ² = dϑ² + sin²ϑ dφ²',      n:'Ángulo sólido'},
+    {s:'f(r) = 1 − r_S/r',           n:'Factor redshift Schwarzschild'},
+    {s:'r̂ = r + r_S ln|r/r_S − 1|', n:'Coordenada tortoise'},
+    {s:'E = (1−r_S/r) c² dt/dτ',     n:'Energía conservada (Schw.)'},
+    {s:'L = r² dφ/dτ',               n:'Momento angular (Schw.)'},
+    {s:'V_eff(r) = c²(1−r_S/r)(1+L²/r²c²)', n:'Potencial efectivo'},
+  ],
+  'e4-kerr': [
+    {s:'ds² = −(1−r_S r/ρ²)c²dt² − (2r_S r a sin²ϑ/ρ²)c dtdφ + (ρ²/Δ)dr² + ρ²dϑ² + (r²+a²+r_S r a²sin²ϑ/ρ²)sin²ϑ dφ²',
+                                      n:'Métrica de Kerr (Perlick BH §6)'},
+    {s:'ρ² = r² + a²cos²ϑ',          n:'Función ρ Kerr'},
+    {s:'Δ = r² − r_S r + a²',        n:'Función Δ Kerr'},
+    {s:'a = J/(Mc)',                  n:'Parámetro de espín'},
+    {s:'r_± = ½r_S ± √(¼r_S² − a²)', n:'Horizontes de Kerr'},
+    {s:'g_tφ ≠ 0',                   n:'Arrastre de marcos (frame-dragging)'},
+  ],
+  'e4-thermo': [
+    {s:'T_H = ℏc³/(8πGMk_B)',        n:'Temperatura de Hawking'},
+    {s:'S_BH = k_B A/(4ℓ_P²)',       n:'Entropía Bekenstein-Hawking'},
+    {s:'A = 4πr_H²',                 n:'Área del horizonte (Schw.)'},
+    {s:'dM = T_H dS + Ω_H dJ + Φ_H dQ', n:'1ª ley termod. BH'},
+    {s:'κ_H = c⁴/(4GM)',             n:'Gravedad superficial (Schw.)'},
+    {s:'Ω_H = a c/(r_+² + a²)',      n:'Velocidad angular horizonte Kerr'},
+  ],
+
+  // GW
+  'e5-lin': [
+    {s:'g_μν = η_μν + h_μν,  |h_μν| ≪ 1', n:'Linearización campo Einstein'},
+    {s:'h̄_μν = h_μν − ½η_μν h',     n:'Perturbación traza-inversa'},
+    {s:'□ h̄_μν = −2κ T_μν',         n:'Campo linealizado con fuente'},
+    {s:'□ h̄_μν = 0',                n:'Vacío linealizado (Perlick GW §3)'},
+    {s:'∂^μ h̄_μν = 0',              n:'Gauge de Hilbert (Lorenz)'},
+    {s:'γ_μν = Re{A_μν e^(ik_ρ x^ρ)}', n:'Onda plano-armónica (Perlick)'},
+    {s:'k_μ k^μ = 0',                n:'Vector de onda nulo'},
+    {s:'h^TT_ij',                   n:'Gauge TT (transversal-traza nula)'},
+  ],
+  'e5-det': [
+    {s:'h_ij = (2G/c⁴r) İ̈^TT_ij',   n:'Fórmula cuadrupolar (Perlick GW §3)'},
+    {s:'I_ij = ∫ρ x^i x^j d³x',      n:'Momento cuadrupolar de masa'},
+    {s:'P_GW = G/(5c⁵) İ̈_ij İ̈^ij',  n:'Potencia irradiada'},
+    {s:'ΔE = −G/(5c⁵)∫İ̈_ij İ̈^ij dt',n:'Pérdida de energía'},
+    {s:'h_+ = h_× = h/2',             n:'Polarizaciones + y ×'},
+    {s:'Δx/x = h/2',                  n:'Efecto en detector interferométrico'},
+    {s:'f_orb = (1/π)(GM/r³)^½',      n:'Frecuencia orbital binaria'},
+    {s:'τ_chirp = 5c⁵/(256G³) M⁻²r⁴',n:'Tiempo de chirp'},
+  ],
+
+  // Cosmología
+  'e6-rw': [
+    {s:'ds² = −c²dt² + a(t)²[dχ² + ξ(χ)²(dϑ² + sin²ϑ dφ²)]',
+                                      n:'Métrica Robertson-Walker (Perlick Co §3.1)'},
+    {s:'ξ(χ) = sin χ  (K>0)',         n:'Espacialmente esférico'},
+    {s:'ξ(χ) = χ        (K=0)',       n:'Espacialmente plano'},
+    {s:'ξ(χ) = sinh χ (K<0)',         n:'Espacialmente hiperbólico'},
+    {s:'(ȧ/a)² = 8πGρ/3 − Kc²/a² + Λc²/3', n:'1ª Ecuación de Friedmann'},
+    {s:'ä/a = −4πG/3(ρ + 3p/c²) + Λc²/3',  n:'2ª Ecuación de Friedmann (aceleración)'},
+    {s:'ρ̇ + 3(ȧ/a)(ρ + p/c²) = 0',   n:'Ecuación de continuidad fluido cosmológico'},
+    {s:'p = wρc²',                    n:'Ecuación de estado (w=0 polvo, w=1/3 rad.)'},
+  ],
+  'e6-par': [
+    {s:'H = ȧ/a',                     n:'Parámetro de Hubble'},
+    {s:'H₀ ≈ 70 km/s/Mpc',           n:'Constante de Hubble actual'},
+    {s:'ρ_c = 3H²/(8πG)',             n:'Densidad crítica'},
+    {s:'Ω = ρ/ρ_c',                   n:'Parámetro de densidad total'},
+    {s:'Ω_m + Ω_Λ + Ω_r + Ω_k = 1',  n:'Suma de parámetros Ω'},
+    {s:'Ω_Λ = Λc²/(3H²)',             n:'Energía oscura'},
+    {s:'q = −ä a/ȧ²',                 n:'Parámetro de deceleración'},
+    {s:'z = a₀/a − 1',               n:'Corrimiento al rojo cosmológico'},
+    {s:'d_L = (1+z) d_C',             n:'Distancia de luminosidad'},
+    {s:'d_A = d_C/(1+z)',             n:'Distancia angular'},
+    {s:'T_CMB ≈ 2.725 K',            n:'Temperatura del fondo cósmico'},
+    {s:'Λ = 8πGρ_Λ/c²',             n:'Constante cosmológica'},
+  ],
+};
+
+/* ─── Build ──────────────────────────────────────────────────────────── */
+function ins(sym) {
+  const ta = document.getElementById('ta');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + sym + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + sym.length;
+  ta.focus();
+}
+
+function buildGrid(id, syms) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  syms.forEach(sym => {
+    const d = document.createElement('div');
+    d.className = 's' + (sym.length > 5 ? ' sm' : '') + (sym.length > 10 ? ' xsm' : '');
+    d.textContent = sym;
+    d.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      d.classList.add('active');
+      ins(sym);
+      setTimeout(() => d.classList.remove('active'), 120);
+    });
+    el.appendChild(d);
+  });
+}
+
+function buildExprs(id, arr, colorClass='') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  arr.forEach(x => {
+    const d = document.createElement('div');
+    d.className = 'ec' + (colorClass ? ' '+colorClass : '');
+    d.innerHTML = `<span class="ec-s">${x.s}</span><span class="ec-n">${x.n}</span>`;
+    d.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      ins(x.s);
+    });
+    el.appendChild(d);
+  });
+}
+
+/* ─── Init ─────────────────────────────────────────────────────────── */
+Object.entries(DATA).forEach(([id,syms]) => buildGrid(id,syms));
+buildExprs('e3-bas', EXPRS['e3-bas']);
+buildExprs('e3-efe', EXPRS['e3-efe']);
+buildExprs('e3-geo', EXPRS['e3-geo']);
+buildExprs('e4-sch',    EXPRS['e4-sch'],   'go');
+buildExprs('e4-kerr',   EXPRS['e4-kerr'],  'go');
+buildExprs('e4-thermo', EXPRS['e4-thermo'],'go');
+buildExprs('e5-lin',    EXPRS['e5-lin'],   'bl');
+buildExprs('e5-det',    EXPRS['e5-det'],   'bl');
+buildExprs('e6-rw',     EXPRS['e6-rw'],    'vi');
+buildExprs('e6-par',    EXPRS['e6-par'],   'vi');
+
+/* ─── Tabs ─────────────────────────────────────────────────────────── */
+function tab(i, el) {
+  document.querySelectorAll('.tab').forEach((t,j) => {
+    t.classList.toggle('on', j===i);
+    document.getElementById('p'+j).classList.toggle('on', j===i);
+  });
+}
+
+/* ─── Actions ─────────────────────────────────────────────────────── */
+function doCopy() {
+  const v = document.getElementById('ta').value;
+  if (!v) { showToast('¡Escribe algo primero!'); return; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(v).then(() => showToast('¡Copiado! — pega en cualquier IA ✓'))
+      .catch(() => fallbackCopy(v));
+  } else { fallbackCopy(v); }
+}
+function fallbackCopy(v) {
+  const ta = document.getElementById('ta');
+  ta.select(); ta.setSelectionRange(0, 99999);
+  document.execCommand('copy');
+  showToast('¡Copiado! — pega en Claude, ChatGPT, Gemini ✓');
+}
+function doClear() {
+  document.getElementById('ta').value = '';
+  document.getElementById('aip').classList.remove('on');
+}
+function doBksp() {
+  const ta = document.getElementById('ta');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  if (s === e && s > 0) {
+    // Handle multi-byte / combining chars
+    const before = ta.value.slice(0, s);
+    const seg = [...before];
+    const removed = seg.slice(0,-1).join('');
+    ta.value = removed + ta.value.slice(s);
+    const ns = removed.length;
+    ta.selectionStart = ta.selectionEnd = ns;
+  } else if (s !== e) {
+    ta.value = ta.value.slice(0,s) + ta.value.slice(e);
+    ta.selectionStart = ta.selectionEnd = s;
+  }
+  ta.focus();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+/* ─── AI Explain ───────────────────────────────────────────────────── */
+async function doAI() {
+  const expr = document.getElementById('ta').value.trim();
+  if (!expr) { showToast('Escribe una expresión primero'); return; }
+  const panel = document.getElementById('aip');
+  const txt   = document.getElementById('aip-t');
+  panel.classList.add('on');
+  txt.innerHTML = '<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `Eres un profesor experto en relatividad general, agujeros negros, ondas gravitacionales y cosmología, familiarizado con los textos de Volker Perlick (Bremen). El estudiante colombiano escribe expresiones en notación textual. 
+Responde en español. Explica: (1) qué es cada tensor/símbolo, (2) su significado físico, (3) en qué contexto de Perlick aparece. Sé conciso, claro, pedagógico. Sin markdown ni asteriscos.`,
+        messages: [{role:'user', content:`Explícame esta expresión/ecuación: ${expr}`}]
+      })
+    });
+    const data = await r.json();
+    const msg = data.content?.map(b=>b.text||'').join('') || 'Sin respuesta.';
+    txt.textContent = msg;
+  } catch(e) {
+    txt.textContent = 'Error de conexión. Revisa tu internet.';
+  }
+}
+
+/* ─── Prevent scroll bounce on iOS while using app ─────────────────── */
+document.addEventListener('touchmove', e => {
+  if (!e.target.closest('.panels') && !e.target.closest('#ta') && !e.target.closest('.aip')) {
+    e.preventDefault();
+  }
+}, {passive: false});
+</script>
+</body>
+</html>
