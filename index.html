@@ -7,215 +7,250 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GR Teclado">
 <meta name="theme-color" content="#080f09">
-<title>Teclado · Relatividad General v3</title>
+<title>GR · Teclado v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;
+  -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 :root{
   --bg:#080f09;--s1:#0d1a0e;--s2:#111f12;--s3:#152016;
-  --bdr:rgba(150,200,150,0.13);--bdr2:rgba(150,200,150,0.22);
-  --chalk:#ece8d5;--dim:rgba(236,232,213,0.52);--faint:rgba(236,232,213,0.2);
-  --gr:#5cb85c;--gr-d:rgba(92,184,92,0.13);--gr-b:rgba(92,184,92,0.38);
-  --go:#c9963a;--go-d:rgba(201,150,58,0.13);--go-b:rgba(201,150,58,0.38);
-  --bl:#4a9ece;--bl-d:rgba(74,158,206,0.13);--bl-b:rgba(74,158,206,0.35);
-  --vi:#9b7ecb;--vi-d:rgba(155,126,203,0.13);--vi-b:rgba(155,126,203,0.35);
-  --re:#cc5555;--re-d:rgba(200,80,80,0.13);
+  --bdr:rgba(150,200,150,0.13);--bdr2:rgba(150,200,150,0.28);
+  --chalk:#ece8d5;--dim:rgba(236,232,213,0.52);--faint:rgba(236,232,213,0.18);
+  --gr:#5cb85c;--grd:rgba(92,184,92,0.13);--grb:rgba(92,184,92,0.38);
+  --go:#c9963a;--god:rgba(201,150,58,0.13);--gob:rgba(201,150,58,0.38);
+  --bl:#4a9ece;--bld:rgba(74,158,206,0.13);--blb:rgba(74,158,206,0.35);
+  --vi:#9b7ecb;--vid:rgba(155,126,203,0.13);--vib:rgba(155,126,203,0.35);
+  --red:rgba(200,80,80,0.13);
+  --kb-letter:#1c2e1d;--kb-fn:#0d1a0e;--kb-shadow:#000a;
   --mono:'JetBrains Mono',monospace;--serif:'Spectral',Georgia,serif;
-  --r:8px;--rr:10px
 }
-html,body{height:100%;background:var(--bg);color:var(--chalk);font-family:var(--serif);overflow:hidden}
-.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:640px;margin:0 auto;position:relative}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.06;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
-.app>*{position:relative;z-index:1}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);font-family:var(--serif)}
 
-/* Header */
-.hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;
+/* ── App shell: FULL HEIGHT, keyboard always at bottom ── */
+.app{
+  display:flex;flex-direction:column;
+  height:100dvh;          /* fills entire viewport */
+  max-width:640px;margin:0 auto;
+  position:relative;overflow:hidden;
+}
+
+/* ── Header ── */
+.hdr{display:flex;align-items:center;gap:10px;padding:9px 14px;
   background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0}
-.hdr-icon{font-family:var(--mono);font-size:24px;color:var(--gr);
-  text-shadow:0 0 16px rgba(92,184,92,.4);line-height:1}
-.hdr-t h1{font-size:14px;font-weight:600;letter-spacing:.015em}
-.hdr-t p{font-size:10.5px;color:var(--dim);font-style:italic;margin-top:1px}
-.hdr-badge{margin-left:auto;font-size:9px;background:var(--gr-d);border:1px solid var(--gr-b);
-  color:var(--gr);padding:3px 8px;border-radius:12px;letter-spacing:.06em;font-family:var(--mono)}
+.hdr-ic{font-family:var(--mono);font-size:22px;color:var(--gr);
+  text-shadow:0 0 14px rgba(92,184,92,.4)}
+.hdr-t h1{font-size:13px;font-weight:600;letter-spacing:.015em}
+.hdr-t p{font-size:10px;color:var(--dim);font-style:italic;margin-top:1px}
+.badge{margin-left:auto;font-size:9px;background:var(--grd);border:1px solid var(--grb);
+  color:var(--gr);padding:3px 7px;border-radius:10px;letter-spacing:.06em;
+  font-family:var(--mono);flex-shrink:0}
 
-/* Composer */
-.cmp{padding:9px 12px 8px;background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0}
+/* ── Display area ── */
+.dw{padding:8px 12px 6px;background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0}
 #ta{
-  width:100%;min-height:72px;max-height:130px;background:var(--bg);
-  border:1px solid var(--bdr);border-radius:var(--r);
+  min-height:62px;max-height:108px;background:var(--bg);
+  border:1px solid var(--bdr);border-radius:8px;
   color:var(--chalk);font-family:var(--mono);font-size:16px;line-height:1.65;
-  padding:9px 11px;outline:none;transition:border-color .18s;overflow-y:auto;
-  white-space:pre-wrap;word-break:break-word;cursor:text;
-  -webkit-user-select:text;user-select:text;
+  padding:9px 11px;outline:none;overflow-y:auto;
+  white-space:pre-wrap;word-break:break-word;
+  -webkit-user-select:text;user-select:text;cursor:text;
+  transition:border-color .18s;
 }
-#ta:focus{border-color:var(--gr-b);caret-color:var(--gr)}
-#ta:empty::before{
-  content:attr(data-ph);color:var(--faint);font-family:var(--serif);
-  font-style:italic;font-size:13px;pointer-events:none
-}
+#ta:focus{border-color:var(--grb);caret-color:var(--gr)}
+#ta:empty::before{content:attr(data-ph);color:var(--faint);font-family:var(--serif);
+  font-style:italic;font-size:13px;pointer-events:none}
 #ta sub{font-size:.65em;vertical-align:sub;line-height:0}
 #ta sup{font-size:.65em;vertical-align:super;line-height:0}
-.acts{display:flex;gap:6px;margin-top:7px}
-.btn{flex:1;padding:8px 6px;border:1px solid var(--bdr);border-radius:var(--r);
-  background:var(--s2);color:var(--chalk);font-family:var(--serif);
-  font-size:12px;cursor:pointer;transition:all .1s;text-align:center;letter-spacing:.01em;
-  -webkit-user-select:none;user-select:none}
-.btn:active{transform:scale(.93)}
-.b-copy{background:var(--gr-d);border-color:var(--gr-b);color:var(--gr);font-weight:600}
-.b-ai{background:var(--go-d);border-color:var(--go-b);color:var(--go)}
-.b-clr:active{background:var(--re-d)}
-.b-bs{background:var(--s3);min-width:46px;flex:0 0 46px;font-size:16px}
 
-/* AI Panel */
-.aip{background:var(--s1);border-bottom:1px solid var(--go-b);
-  padding:11px 13px;display:none;max-height:180px;overflow-y:auto;flex-shrink:0}
+/* ── Action buttons ── */
+.acts{display:flex;gap:5px;margin-top:7px}
+.btn{flex:1;padding:8px 5px;border:1px solid var(--bdr);border-radius:8px;
+  background:var(--s2);color:var(--chalk);font-family:var(--serif);
+  font-size:12px;text-align:center;cursor:pointer;-webkit-user-select:none;user-select:none}
+.btn:active{transform:scale(.93)}
+.bcopy{background:var(--grd);border-color:var(--grb);color:var(--gr);font-weight:600}
+.bai{background:var(--god);border-color:var(--gob);color:var(--go)}
+.bbs{flex:0 0 44px;font-size:16px}
+
+/* ── AI Panel ── */
+.aip{background:var(--s1);border-bottom:1px solid var(--gob);
+  padding:10px 13px;display:none;max-height:140px;overflow-y:auto;flex-shrink:0}
 .aip.on{display:block}
-.aip-h{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--go);margin-bottom:7px}
-.aip-t{font-size:13px;line-height:1.7;color:var(--chalk)}
+.aip-h{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--go);margin-bottom:6px}
+.aip-t{font-size:13px;line-height:1.65;color:var(--chalk)}
 .dots{display:flex;gap:5px;align-items:center;padding:4px 0}
 .dot{width:5px;height:5px;border-radius:50%;background:var(--go);
-  animation:pu 1.1s ease-in-out infinite}
+  animation:dp 1.1s ease-in-out infinite}
 .dot:nth-child(2){animation-delay:.18s}.dot:nth-child(3){animation-delay:.36s}
-@keyframes pu{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:1;transform:scale(1)}}
+@keyframes dp{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
 
-/* Tabs */
-.tabbar{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
-  background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0;gap:1px;padding:0 4px}
+/* ── Tabs ── */
+/* FIX #6: proper horizontal scroll, no wrapping */
+.tabbar{
+  display:flex;overflow-x:scroll;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;background:var(--s1);border-bottom:1px solid var(--bdr);
+  flex-shrink:0;padding:0 4px;
+  /* Allow smooth swipe */
+  scroll-snap-type:x proximity;
+}
 .tabbar::-webkit-scrollbar{display:none}
-.tab{flex-shrink:0;padding:9px 11px;font-size:11px;color:var(--dim);
-  cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;
-  font-family:var(--serif);letter-spacing:.01em;-webkit-user-select:none;user-select:none}
+.tab{
+  flex-shrink:0;padding:9px 12px;font-size:11px;color:var(--dim);
+  cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;
+  font-family:var(--serif);letter-spacing:.01em;
+  -webkit-user-select:none;user-select:none;
+  scroll-snap-align:start;
+}
 .tab.on{color:var(--gr);border-bottom-color:var(--gr);font-weight:600}
-.tab-bh.on{color:var(--go);border-bottom-color:var(--go)}
-.tab-gw.on{color:var(--bl);border-bottom-color:var(--bl)}
-.tab-co.on{color:var(--vi);border-bottom-color:var(--vi)}
+.tab.tbh.on{color:var(--go);border-bottom-color:var(--go)}
+.tab.tgw.on{color:var(--bl);border-bottom-color:var(--bl)}
+.tab.tco.on{color:var(--vi);border-bottom-color:var(--vi)}
+/* Fade on right edge to hint scrollability */
+.tabbar::after{content:'';position:sticky;right:0;flex-shrink:0;width:24px;
+  background:linear-gradient(to right,transparent,var(--s1));pointer-events:none}
 
-/* Panels */
-.panels{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 10px 28px}
+/* FIX #5: Quick Math Bar — = + - × / ( ) visible on all symbol panels */
+.mathbar{
+  display:flex;gap:4px;padding:5px 8px;
+  background:var(--s1);border-bottom:1px solid var(--bdr);
+  flex-shrink:0;
+}
+.mkey{
+  flex:1;height:34px;background:var(--s2);border:1px solid var(--bdr);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:16px;color:var(--chalk);cursor:pointer;
+  -webkit-user-select:none;user-select:none;
+}
+.mkey.sp{flex:2;font-size:11px;color:var(--dim);letter-spacing:.04em}
+.mkey.pressed{background:var(--grd);border-color:var(--grb)}
+
+/* ── Symbol panels (flex:1, scrollable) ── */
+.panels{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 10px 20px}
 .panel{display:none}.panel.on{display:block}
 .sec{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
-  color:var(--faint);margin:12px 0 6px 2px}
+  color:var(--faint);margin:12px 0 5px 2px}
 .sec:first-child{margin-top:2px}
-.sec.go{color:rgba(201,150,58,.5)}
-.sec.bl{color:rgba(74,158,206,.4)}
-.sec.vi{color:rgba(155,126,203,.4)}
+.sec.go{color:rgba(201,150,58,.5)}.sec.bl{color:rgba(74,158,206,.4)}.sec.vi{color:rgba(155,126,203,.4)}
 
-/* Symbol Grid */
+/* Symbol grid */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px}
 .grid.w{grid-template-columns:repeat(auto-fill,minmax(62px,1fr))}
 .grid.ww{grid-template-columns:repeat(auto-fill,minmax(82px,1fr))}
-.s{height:44px;display:flex;align-items:center;justify-content:center;
+.s{
+  height:44px;display:flex;align-items:center;justify-content:center;
   background:var(--s2);border:1px solid var(--bdr);border-radius:7px;
-  font-family:var(--mono);font-size:18px;cursor:pointer;color:var(--chalk);
-  transition:background .08s,border-color .08s;
-  user-select:none;-webkit-user-select:none;padding:0 4px;position:relative}
+  font-family:var(--mono);font-size:18px;color:var(--chalk);
+  -webkit-user-select:none;user-select:none;padding:0 3px;position:relative;
+  /* FIX #2: no immediate action on touch-down */
+}
 .s.sm{font-size:11px;letter-spacing:-.02em;text-align:center;padding:2px 4px;line-height:1.25}
 .s.xsm{font-size:9.5px}
-.s:active{background:var(--gr-d);border-color:var(--gr-b)}
-.s.go:active{background:var(--go-d);border-color:var(--go-b)}
-.s.bl:active{background:var(--bl-d);border-color:var(--bl-b)}
-.s.vi:active{background:var(--vi-d);border-color:var(--vi-b)}
-/* Greek keys: show small triangle in corner when they have variants */
+.s.pressed{background:var(--grd);border-color:var(--grb);transform:scale(.88)}
+.s.go.pressed{background:var(--god);border-color:var(--gob)}
+.s.bl.pressed{background:var(--bld);border-color:var(--blb)}
+.s.vi.pressed{background:var(--vid);border-color:var(--vib)}
+/* Triangle hint for Greek variants */
 .s.has-var::after{content:'';position:absolute;top:3px;right:3px;
-  width:4px;height:4px;border-right:2px solid var(--gr-b);border-top:2px solid var(--gr-b)}
+  width:4px;height:4px;border-right:2px solid var(--grb);border-top:2px solid var(--grb)}
+/* sub/sup inside symbols */
+.s sub{font-size:.65em;vertical-align:sub;line-height:0}
+.s sup{font-size:.65em;vertical-align:super;line-height:0}
 
-/* Expression Cards */
+/* Expression cards */
 .egrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.egrid.w1{grid-template-columns:1fr}
-.ec{padding:10px 11px;background:var(--s2);border:1px solid var(--bdr);
-  border-radius:var(--r);cursor:pointer;transition:all .1s;user-select:none;-webkit-user-select:none}
-.ec:active{background:var(--gr-d);border-color:var(--gr-b)}
-.ec.go:active{background:var(--go-d);border-color:var(--go-b)}
-.ec.bl:active{background:var(--bl-d);border-color:var(--bl-b)}
-.ec.vi:active{background:var(--vi-d);border-color:var(--vi-b)}
-.ec-s{font-family:var(--mono);font-size:12px;color:var(--chalk);display:block;line-height:1.5}
-.ec-s sub{font-size:.7em;vertical-align:sub;line-height:0}
-.ec-s sup{font-size:.7em;vertical-align:super;line-height:0}
-.ec-n{font-size:9.5px;color:var(--dim);margin-top:3px;font-style:italic;display:block}
+.ec{padding:9px 10px;background:var(--s2);border:1px solid var(--bdr);
+  border-radius:8px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.ec.pressed{background:var(--grd);border-color:var(--grb)}
+.ec.go.pressed{background:var(--god);border-color:var(--gob)}
+.ec.bl.pressed{background:var(--bld);border-color:var(--blb)}
+.ec.vi.pressed{background:var(--vid);border-color:var(--vib)}
+.ec-s{font-family:var(--mono);font-size:11.5px;color:var(--chalk);display:block;line-height:1.5}
+.ec-s sub{font-size:.68em;vertical-align:sub;line-height:0}
+.ec-s sup{font-size:.68em;vertical-align:super;line-height:0}
+.ec-n{font-size:9px;color:var(--dim);margin-top:3px;font-style:italic;display:block}
 
-/* ── Custom Text Keyboard (Escritura panel) ── */
-.kb-wrap{padding:6px 4px 4px;user-select:none;-webkit-user-select:none}
-.kb-row{display:flex;gap:5px;margin-bottom:9px;justify-content:center;padding:0 2px}
-.kb-row:last-child{margin-bottom:0}
-.kb-key{
-  flex:1;height:44px;max-width:40px;
-  background:#1c2e1d;border:none;border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--serif);font-size:18px;color:var(--chalk);
-  cursor:pointer;
-  box-shadow:0 2px 0 #000a;
-  transition:background .08s;
-  -webkit-user-select:none;user-select:none;
-}
-.kb-key:active,.kb-key.pressed{background:#3a5e3b;box-shadow:none;transform:translateY(1px)}
-.kb-key.fn{background:#0d1a0e;font-size:14px;font-family:var(--mono);max-width:none;flex:1.6}
-.kb-key.fn:active{background:#1a2e1b}
-.kb-key.space-key{flex:5;max-width:none;font-size:12px;background:#1c2e1d;letter-spacing:.04em;color:var(--dim)}
-.kb-key.return-key{flex:1.8;max-width:none;font-size:13px;font-family:var(--mono);background:#0d1a0e}
-.kb-key.shift-key{font-size:20px}
-.kb-key.shift-on{background:#2a422b}
-.kb-key.caps-on{background:#3d5e3e}
-.kb-mode{display:none}
-.kb-mode.active{display:block}
-/* Numbers row 1 in 123 mode — 10 keys, smaller font */
-.kb-key.num{font-size:17px;max-width:42px}
-/* ñ key color hint */
-.kb-key[data-char="ñ"],.kb-key[data-char="Ñ"]{background:#1a2e1b}
-
-/* ── Greek Variants Popup ── */
+/* ── Greek variants popup ── */
 #greek-popup{
-  position:fixed;background:#1e3020;border:1.5px solid var(--gr-b);
+  position:fixed;background:#1e3020;border:1.5px solid var(--grb);
   border-radius:10px;display:flex;gap:5px;padding:7px;
-  z-index:3000;box-shadow:0 6px 24px rgba(0,0,0,.7);
+  z-index:3000;box-shadow:0 6px 24px rgba(0,0,0,.75);
   opacity:0;pointer-events:none;transition:opacity .12s;
 }
 #greek-popup.visible{opacity:1;pointer-events:auto}
-.vk{
-  width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+.vk{width:42px;height:42px;display:flex;align-items:center;justify-content:center;
   background:var(--s3);border:1px solid var(--bdr);border-radius:7px;
-  font-family:var(--mono);font-size:20px;cursor:pointer;color:var(--chalk);
-}
-.vk:active{background:var(--gr-d);border-color:var(--gr-b)}
-.vk.selected{background:var(--gr-d);border-color:var(--gr);color:var(--gr)}
+  font-family:var(--mono);font-size:20px;color:var(--chalk);cursor:pointer}
+.vk:active,.vk.selected{background:var(--grd);border-color:var(--grb);color:var(--gr)}
 
-/* ── Loupe / Magnifier ── */
+/* ── Loupe ── */
 #loupe{
-  position:fixed;width:100px;height:50px;
-  background:#1a2a1b;border:2px solid var(--gr-b);
+  position:fixed;width:110px;height:52px;
+  background:#1a2a1b;border:2px solid var(--grb);
   border-radius:12px 12px 12px 0;display:none;
   align-items:center;justify-content:center;
-  z-index:2000;box-shadow:0 4px 18px rgba(0,0,0,.65);overflow:hidden;pointer-events:none;
+  z-index:2000;box-shadow:0 4px 18px rgba(0,0,0,.7);
+  overflow:hidden;pointer-events:none;
 }
-#loupe-txt{
-  font-family:var(--mono);font-size:22px;color:var(--chalk);
-  white-space:nowrap;display:flex;align-items:center;gap:0}
+#loupe-txt{font-family:var(--mono);font-size:22px;color:var(--chalk);
+  white-space:nowrap;display:flex;align-items:center}
 .loupe-cur{display:inline-block;width:2px;height:22px;background:var(--gr);
   vertical-align:middle;animation:blink 1s step-end infinite}
 @keyframes blink{50%{opacity:0}}
 
-/* Toast */
-.toast{position:fixed;bottom:20px;left:50%;
+/* ── FIX #1: Keyboard section — ALWAYS at the bottom, correct height ── */
+/* This sits OUTSIDE .panels, as a flex child of .app */
+#kb-section{
+  flex-shrink:0;
+  background:#080f09;
+  /* Will be shown/hidden by JS */
+}
+.kb-wrap{padding:5px 3px 16px;-webkit-user-select:none;user-select:none}
+.kb-row{display:flex;gap:5px;margin-bottom:8px;justify-content:center;padding:0 3px}
+.kb-row:last-child{margin-bottom:0}
+.kb-key{
+  flex:1;height:44px;max-width:40px;
+  background:var(--kb-letter);border:none;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:18px;color:var(--chalk);
+  cursor:pointer;box-shadow:0 2px 0 var(--kb-shadow);
+  -webkit-user-select:none;user-select:none;
+}
+.kb-key.pressed{background:#3a5e3b;box-shadow:none;transform:translateY(1px)}
+.kb-key.fn{background:var(--kb-fn);font-size:14px;font-family:var(--mono);max-width:none;flex:1.55}
+.kb-key.fn.pressed{background:#1a2e1b;box-shadow:none;transform:translateY(1px)}
+.kb-key.sp{flex:5;max-width:9999px;font-size:12px;color:var(--dim);letter-spacing:.04em}
+.kb-key.ret{flex:2;max-width:9999px;font-size:14px}
+.kb-key.shift-on{background:#2a4a2b}
+.kb-key.caps-on{background:#3d6040}
+.kb-mode{display:none}.kb-mode.active{display:block}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:18px;left:50%;
   transform:translateX(-50%) translateY(14px);
   background:var(--gr);color:#050d06;padding:7px 20px;border-radius:18px;
-  font-size:13px;font-weight:600;opacity:0;transition:all .22s;pointer-events:none;z-index:999;
-  font-family:var(--serif)}
+  font-size:13px;font-weight:600;opacity:0;transition:all .22s;
+  pointer-events:none;z-index:999;font-family:var(--serif)
+}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 <div class="app">
 
+  <!-- Header -->
   <div class="hdr">
-    <span class="hdr-icon">∂</span>
+    <span class="hdr-ic">∂</span>
     <div class="hdr-t">
-      <h1>Relatividad General · Teclado v3</h1>
+      <h1>Relatividad General · v4</h1>
       <p>Perlick · GR · Agujeros Negros · Ondas · Cosmología</p>
     </div>
-    <div class="hdr-badge">PWA</div>
+    <span class="badge">PWA</span>
   </div>
 
-  <div class="cmp">
+  <!-- Display -->
+  <div class="dw">
     <div id="ta"
          contenteditable="true"
          inputmode="none"
@@ -223,68 +258,69 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
          autocorrect="off"
          autocapitalize="off"
          autocomplete="off"
-         data-ph="Toca los símbolos ↓ para componer tu pregunta… luego copia y pega en Claude, ChatGPT, Gemini…">
+         data-ph="Toca los símbolos para componer tu pregunta… luego copia y pega en Claude, ChatGPT, Gemini…">
     </div>
     <div class="acts">
-      <button class="btn b-copy" ontouchstart="doCopy()" onclick="doCopy()">⬆ Copiar</button>
-      <button class="btn b-ai"   ontouchstart="doAI()"   onclick="doAI()">✦ Explicar IA</button>
-      <button class="btn b-clr"  ontouchstart="doClear()" onclick="doClear()">✕</button>
-      <button class="btn b-bs"   ontouchstart="doBksp()" onclick="doBksp()">⌫</button>
+      <button class="btn bcopy" ontouchstart="doCopy()" onclick="doCopy()">⬆ Copiar</button>
+      <button class="btn bai"   ontouchstart="doAI()"   onclick="doAI()">✦ Explicar IA</button>
+      <button class="btn"       ontouchstart="doClear()" onclick="doClear()">✕</button>
+      <button class="btn bbs"   ontouchstart="doBksp()" onclick="doBksp()">⌫</button>
     </div>
   </div>
 
+  <!-- AI explanation panel -->
   <div class="aip" id="aip">
     <div class="aip-h">✦ Explicación</div>
     <div class="aip-t" id="aip-t"></div>
   </div>
 
+  <!-- FIX #6: Tabs with horizontal scroll -->
   <div class="tabbar" id="tabbar">
-    <div class="tab on"       onclick="tab(0,this)">⌨ Escritura</div>
-    <div class="tab"          onclick="tab(1,this)">Griegas</div>
-    <div class="tab"          onclick="tab(2,this)">Operadores</div>
-    <div class="tab"          onclick="tab(3,this)">Índices</div>
-    <div class="tab"          onclick="tab(4,this)">Expr GR</div>
-    <div class="tab tab-bh"   onclick="tab(5,this)">☞ Ag. Negros</div>
-    <div class="tab tab-gw"   onclick="tab(6,this)">Ondas Grav.</div>
-    <div class="tab tab-co"   onclick="tab(7,this)">Cosmología</div>
-    <div class="tab"          onclick="tab(8,this)">Diacríticos</div>
-    <div class="tab"          onclick="tab(9,this)">Relaciones</div>
-    <div class="tab"          onclick="tab(10,this)">Misc</div>
+    <div class="tab on"      onclick="switchTab(0,this)">⌨ Escritura</div>
+    <div class="tab"         onclick="switchTab(1,this)">Griegas</div>
+    <div class="tab"         onclick="switchTab(2,this)">Operadores</div>
+    <div class="tab"         onclick="switchTab(3,this)">Índices</div>
+    <div class="tab"         onclick="switchTab(4,this)">Expr GR</div>
+    <div class="tab tbh"     onclick="switchTab(5,this)">☞ Ag. Negros</div>
+    <div class="tab tgw"     onclick="switchTab(6,this)">Ondas Grav.</div>
+    <div class="tab tco"     onclick="switchTab(7,this)">Cosmología</div>
+    <div class="tab"         onclick="switchTab(8,this)">Diacríticos</div>
+    <div class="tab"         onclick="switchTab(9,this)">Relaciones</div>
+    <div class="tab"         onclick="switchTab(10,this)">Misc</div>
   </div>
 
-  <div class="panels">
+  <!-- FIX #5: Quick math bar (always visible except Escritura) -->
+  <div class="mathbar" id="mathbar" style="display:none">
+    <!-- Built by JS -->
+  </div>
 
-    <!-- 0 · ESCRITURA (custom keyboard) -->
+  <!-- Symbol panels (hidden when Escritura) -->
+  <div class="panels" id="panels" style="display:none">
+
+    <!-- 0: Griegas -->
     <div class="panel on" id="p0">
-      <div class="kb-wrap" id="kb-wrap">
-        <!-- built by JS -->
-      </div>
-    </div>
-
-    <!-- 1 · GRIEGAS -->
-    <div class="panel" id="p1">
-      <div class="sec">Minúsculas — mantén pulsado para variantes</div>
+      <div class="sec">Minúsculas — mantén pulsado para ver variantes</div>
       <div class="grid" id="g0-lo"></div>
-      <div class="sec">Mayúsculas</div>
+      <div class="sec">Mayúsculas — mantén pulsado para variantes</div>
       <div class="grid" id="g0-up"></div>
-      <div class="sec">Variantes destacadas en los textos</div>
+      <div class="sec">Variantes directas (Perlick)</div>
       <div class="grid" id="g0-va"></div>
     </div>
 
-    <!-- 2 · OPERADORES -->
-    <div class="panel" id="p2">
+    <!-- 1: Operadores -->
+    <div class="panel" id="p1">
       <div class="sec">Diferencial / nabla</div>
       <div class="grid" id="g1-dif"></div>
       <div class="sec">Derivadas con subíndice</div>
       <div class="grid w" id="g1-dsub"></div>
-      <div class="sec">Derivadas totales / Lagrangianas (Perlick §2–5)</div>
+      <div class="sec">Derivadas totales y Lagrangianas (Perlick §2–5)</div>
       <div class="grid w" id="g1-dt"></div>
       <div class="sec">Integrales y sumas</div>
       <div class="grid" id="g1-int"></div>
     </div>
 
-    <!-- 3 · ÍNDICES -->
-    <div class="panel" id="p3">
+    <!-- 2: Índices -->
+    <div class="panel" id="p2">
       <div class="sec">Superíndices Unicode</div>
       <div class="grid" id="g2-sup"></div>
       <div class="sec">Subíndices Unicode</div>
@@ -295,8 +331,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
       <div class="grid w" id="g2-idx"></div>
     </div>
 
-    <!-- 4 · EXPR GR -->
-    <div class="panel" id="p4">
+    <!-- 3: Expr GR -->
+    <div class="panel" id="p3">
       <div class="sec">Métricas y tensores fundamentales</div>
       <div class="egrid" id="e3-bas"></div>
       <div class="sec">Ecuaciones de campo</div>
@@ -305,21 +341,21 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
       <div class="egrid" id="e3-geo"></div>
     </div>
 
-    <!-- 5 · AGUJEROS NEGROS -->
-    <div class="panel" id="p5">
+    <!-- 4: Agujeros Negros -->
+    <div class="panel" id="p4">
       <div class="sec go">Schwarzschild</div>
       <div class="egrid" id="e4-sch"></div>
       <div class="sec go">Kerr y Kerr-Newman</div>
       <div class="egrid" id="e4-kerr"></div>
       <div class="sec go">Horizontes y termodinámica</div>
       <div class="egrid" id="e4-thermo"></div>
-      <div class="sec go">Símbolos clave</div>
+      <div class="sec go">Símbolos clave BH</div>
       <div class="grid w" id="g4-sym"></div>
     </div>
 
-    <!-- 6 · ONDAS GRAVITACIONALES -->
-    <div class="panel" id="p6">
-      <div class="sec bl">Campo linealizado (Perlick §7 / GW notes)</div>
+    <!-- 5: Ondas Grav. -->
+    <div class="panel" id="p5">
+      <div class="sec bl">Campo linealizado (Perlick GW §3)</div>
       <div class="egrid" id="e5-lin"></div>
       <div class="sec bl">Detectores y fuentes</div>
       <div class="egrid" id="e5-det"></div>
@@ -327,8 +363,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
       <div class="grid w" id="g5-sym"></div>
     </div>
 
-    <!-- 7 · COSMOLOGÍA -->
-    <div class="panel" id="p7">
+    <!-- 6: Cosmología -->
+    <div class="panel" id="p6">
       <div class="sec vi">Robertson-Walker y Friedmann (Perlick §3)</div>
       <div class="egrid" id="e6-rw"></div>
       <div class="sec vi">Parámetros cosmológicos</div>
@@ -337,71 +373,73 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
       <div class="grid w" id="g6-sym"></div>
     </div>
 
-    <!-- 8 · DIACRÍTICOS -->
-    <div class="panel" id="p8">
-      <div class="sec">Notación de Perlick con puntos / primas (ẋ, ẍ, x′)</div>
+    <!-- 7: Diacríticos -->
+    <div class="panel" id="p7">
+      <div class="sec">Notación de Perlick con puntos / primas</div>
       <div class="grid ww" id="g7-dot"></div>
-      <div class="sec">Letras con sombrero, tilde, barra (h̄, ã, x̂)</div>
+      <div class="sec">Sombreros, tildes, barras</div>
       <div class="grid ww" id="g7-hat"></div>
-      <div class="sec">Primas y modificadores genéricos</div>
+      <div class="sec">Primas y modificadores</div>
       <div class="grid" id="g7-pr"></div>
     </div>
 
-    <!-- 9 · RELACIONES -->
-    <div class="panel" id="p9">
+    <!-- 8: Relaciones -->
+    <div class="panel" id="p8">
       <div class="sec">Igualdades y comparaciones</div>
       <div class="grid" id="g8-eq"></div>
       <div class="sec">Flechas y mapeos</div>
       <div class="grid" id="g8-arr"></div>
-      <div class="sec">Lógica, conjuntos, membresía</div>
+      <div class="sec">Lógica, conjuntos</div>
       <div class="grid" id="g8-log"></div>
     </div>
 
-    <!-- 10 · MISC -->
-    <div class="panel" id="p10">
-      <div class="sec">Operaciones aritméticas y álgebra</div>
+    <!-- 9: Misc -->
+    <div class="panel" id="p9">
+      <div class="sec">Operaciones y álgebra</div>
       <div class="grid" id="g9-ops"></div>
       <div class="sec">Constantes físicas</div>
       <div class="grid w" id="g9-const"></div>
-      <div class="sec">Paréntesis y delimitadores</div>
+      <div class="sec">Delimitadores</div>
       <div class="grid" id="g9-del"></div>
-      <div class="sec">Números especiales</div>
+      <div class="sec">Fracciones y raíces</div>
       <div class="grid" id="g9-num"></div>
       <div class="sec">Puntuación</div>
       <div class="grid" id="g9-pun"></div>
     </div>
 
   </div><!-- /panels -->
+
+  <!-- FIX #1: Keyboard OUTSIDE panels, fixed at bottom of .app -->
+  <div id="kb-section">
+    <div class="kb-wrap" id="kb-wrap"><!-- built by JS --></div>
+  </div>
+
 </div><!-- /app -->
 
-<!-- Greek variants popup -->
+<!-- Popups -->
 <div id="greek-popup"></div>
-
-<!-- Loupe -->
 <div id="loupe"><div id="loupe-txt"></div></div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
    UTILITY
-══════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════ */
 function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-/* ══════════════════════════════════════════════════════════
-   EXPR → HTML  (converts _μν → <sub>μν</sub>, ^μ → <sup>μ</sup>)
-══════════════════════════════════════════════════════════ */
+function TA(){return document.getElementById('ta')}
+
+/* ════════════════════════════════════════════════════════════
+   EXPR → HTML  (_μν → <sub>μν</sub>, ^μ → <sup>μ</sup>)
+════════════════════════════════════════════════════════════ */
 function isIdxCh(c){
   const code=c.codePointAt(0);
-  return (code>=0x0391&&code<=0x03C9)|| // Greek Α-ω
-         (code>=0x03D0&&code<=0x03D6)|| // ϐ-ϖ
-         (code>=0x03F0&&code<=0x03F8)|| // ϰ-ϸ
-         c==='ℓ'||c==='ƛ'||c==='ı'||
-         /[0-9a-zA-Z]/.test(c);
+  return (code>=0x0391&&code<=0x03C9)||(code>=0x03D0&&code<=0x03D6)||
+         (code>=0x03F0&&code<=0x03F8)||c==='ℓ'||c==='ƛ'||c==='ı'||
+         /[0-9a-zA-Z±]/.test(c);
 }
-
 function exprToHTML(str){
-  let r='', i=0;
+  let r='',i=0;
   while(i<str.length){
     const ch=str[i];
     if(ch==='&'){r+='&amp;';i++;continue}
@@ -409,8 +447,7 @@ function exprToHTML(str){
     if(ch==='>'){r+='&gt;';i++;continue}
     if((ch==='_'||ch==='^')&&i+1<str.length){
       const tag=ch==='_'?'sub':'sup';
-      i++;
-      let content='';
+      i++;let content='';
       if(str[i]==='{'){
         i++;
         while(i<str.length&&str[i]!=='}'){content+=str[i];i++}
@@ -418,26 +455,34 @@ function exprToHTML(str){
       } else {
         while(i<str.length&&isIdxCh(str[i])){content+=str[i];i++}
       }
-      if(content) r+=`<${tag}>${escH(content)}</${tag}>`;
+      if(content)r+=`<${tag}>${escH(content)}</${tag}>`;
       else r+=escH(ch);
-    } else {
-      r+=escH(ch);i++;
-    }
+    } else {r+=escH(ch);i++;}
   }
   return r;
 }
 
-/* ══════════════════════════════════════════════════════════
-   INSERT INTO CONTENTEDITABLE
-══════════════════════════════════════════════════════════ */
-const TA = ()=>document.getElementById('ta');
+/* ════════════════════════════════════════════════════════════
+   FOCUS MANAGEMENT
+   FIX #3: always move cursor to END, not start
+════════════════════════════════════════════════════════════ */
+function ensureFocusAtEnd(){
+  const ta=TA();
+  ta.focus();
+  const sel=window.getSelection();
+  const range=document.createRange();
+  range.selectNodeContents(ta);
+  range.collapse(false); // collapse to END
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
 
 function ensureFocus(){
   const ta=TA();
   if(document.activeElement!==ta){
     ta.focus();
     const sel=window.getSelection();
-    if(!sel.rangeCount){
+    if(!sel||!sel.rangeCount){
       const r=document.createRange();
       r.selectNodeContents(ta);r.collapse(false);
       sel.removeAllRanges();sel.addRange(r);
@@ -445,19 +490,53 @@ function ensureFocus(){
   }
 }
 
-function insHTML(html){
+/* ════════════════════════════════════════════════════════════
+   INSERT — with cursor baseline reset
+   FIX #4: after inserting sup/sub, cursor exits to baseline
+════════════════════════════════════════════════════════════ */
+function insExprRaw(str){
+  hideVariantPopup();
   ensureFocus();
-  try{
-    document.execCommand('insertHTML',false,html);
-  } catch(e){
-    // fallback: append
-    TA().innerHTML+=html;
+  const html=exprToHTML(str);
+  // Use unique sentinel to reset cursor position to outside any sub/sup
+  const sid='__s'+Date.now();
+  document.execCommand('insertHTML',false,html+`<span id="${sid}" style="font-size:1em;vertical-align:baseline"></span>`);
+  const sentinel=document.getElementById(sid);
+  if(sentinel){
+    const range=document.createRange();
+    range.setStartAfter(sentinel);
+    range.collapse(true);
+    const sel=window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    // Clean up sentinel (without disrupting cursor)
+    sentinel.removeAttribute('id');
+    sentinel.remove();
+  } else {
+    // Fallback: walk up DOM to exit sub/sup context
+    exitSubSup();
   }
 }
 
-function insExprRaw(str){
-  hideVariantPopup();
-  insHTML(exprToHTML(str));
+function exitSubSup(){
+  const ta=TA();
+  const sel=window.getSelection();
+  if(!sel||!sel.rangeCount)return;
+  let range=sel.getRangeAt(0);
+  let node=range.startContainer;
+  while(node&&node!==ta){
+    if(node.nodeName==='SUB'||node.nodeName==='SUP'){
+      const parent=node.parentNode;
+      const idx=Array.from(parent.childNodes).indexOf(node);
+      range=document.createRange();
+      range.setStart(parent,idx+1);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      break;
+    }
+    node=node.parentNode;
+  }
 }
 
 function insChar(c){
@@ -475,96 +554,110 @@ function doClear(){
   document.getElementById('aip').classList.remove('on');
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
    COPY
-══════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════ */
 function getForCopy(){
   function walk(node){
-    if(node.nodeType===3) return node.textContent;
-    if(node.nodeName==='SUB') return '_'+Array.from(node.childNodes).map(walk).join('');
-    if(node.nodeName==='SUP') return '^'+Array.from(node.childNodes).map(walk).join('');
-    if(node.nodeName==='BR') return '\n';
+    if(node.nodeType===3)return node.textContent;
+    if(node.nodeName==='SUB')return '_'+Array.from(node.childNodes).map(walk).join('');
+    if(node.nodeName==='SUP')return '^'+Array.from(node.childNodes).map(walk).join('');
+    if(node.nodeName==='BR')return '\n';
     return Array.from(node.childNodes).map(walk).join('');
   }
   return walk(TA());
 }
-
 function doCopy(){
   const v=getForCopy().trim();
   if(!v){showToast('¡Escribe algo primero!');return}
   if(navigator.clipboard){
     navigator.clipboard.writeText(v)
-      .then(()=>showToast('¡Copiado! — pega en cualquier IA ✓'))
-      .catch(()=>fallbackCopy(v));
-  } else fallbackCopy(v);
+      .then(()=>showToast('¡Copiado! — pega en Claude, ChatGPT, Gemini ✓'))
+      .catch(()=>fbCopy(v));
+  } else fbCopy(v);
 }
-function fallbackCopy(v){
-  const ta=document.createElement('textarea');
-  ta.value=v;ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.select();
-  document.execCommand('copy');document.body.removeChild(ta);
+function fbCopy(v){
+  const t=document.createElement('textarea');
+  t.value=v;t.style.cssText='position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(t);t.select();
+  document.execCommand('copy');document.body.removeChild(t);
   showToast('¡Copiado! ✓');
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
    TOAST
-══════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════ */
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('on');
-  setTimeout(()=>t.classList.remove('on'),2200);
+  setTimeout(()=>t.classList.remove('on'),2400);
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
    TABS
-══════════════════════════════════════════════════════════ */
-function tab(i,el){
-  document.querySelectorAll('.tab').forEach((t,j)=>{
-    t.classList.toggle('on',j===i);
-  });
-  document.querySelectorAll('.panel').forEach((p,j)=>{
-    p.classList.toggle('on',j===i);
-  });
+   FIX #1: toggle panels vs keyboard section
+   FIX #3: cursor always stays at end
+════════════════════════════════════════════════════════════ */
+let currentTab=0;
+
+function switchTab(i,el){
+  // Update tab active state
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on',j===i));
+
+  currentTab=i;
+  const isKb=(i===0);
+  const kbSec=document.getElementById('kb-section');
+  const panelsEl=document.getElementById('panels');
+  const mathbarEl=document.getElementById('mathbar');
+
+  if(isKb){
+    // FIX #1: keyboard at bottom, panels hidden
+    kbSec.style.display='';
+    panelsEl.style.display='none';
+    mathbarEl.style.display='none';
+  } else {
+    kbSec.style.display='none';
+    panelsEl.style.display='';
+    mathbarEl.style.display='flex';
+    // Activate the right panel (panels are 0-indexed, tab 1 → panel 0)
+    document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('on',j===i-1));
+  }
+
   hideVariantPopup();
+  // FIX #3: cursor to end always
+  setTimeout(ensureFocusAtEnd,60);
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
    DATA
-══════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════ */
 const DATA={
-  // 1 Griegas
   'g0-lo':['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','ς','τ','υ','φ','χ','ψ','ω'],
   'g0-up':['Α','Β','Γ','Δ','Ε','Ζ','Η','Θ','Ι','Κ','Λ','Μ','Ν','Ξ','Ο','Π','Ρ','Σ','Τ','Υ','Φ','Χ','Ψ','Ω'],
-  'g0-va':['ϑ','ϕ','ϵ','ϱ','ϰ','ϖ','ℓ','ƛ','ı','ℳ','𝒥','ℰ','ℋ','ƞ','ϐ'],
-  // 2 Operadores
-  'g1-dif':['∂','∇','□','d','δ','D','Δ','∞','℃'],
+  'g0-va':['ϑ','ϕ','ϵ','ϱ','ϰ','ϖ','ℓ','ƛ','ı','ℳ','ℰ','ℋ','ƞ','ϐ'],
+  'g1-dif':['∂','∇','□','d','δ','D','Δ','∞'],
   'g1-dsub':['∂_μ','∂_ν','∂_ρ','∂_σ','∂_τ','∂_λ','∂/∂t','∂/∂r','∂/∂x','∂/∂y','∂/∂z','∂/∂φ','∂/∂ϑ','∇_μ','∇_ν','∇_μ∇^μ'],
   'g1-dt':['d/dτ','d/ds','d/dt','d²/dτ²','d²/ds²','ẋ^μ','ẍ^μ','dx^μ/dτ','dx^μ/ds','dU^μ/dτ','L(x,ẋ)'],
   'g1-int':['∫','∬','∭','∮','∑','∏','√','∛'],
-  // 3 Índices
   'g2-sup':['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹','⁺','⁻','ᵅ','ᵝ','ᵞ','ᵟ','ᵘ','ᵛ','ⁱ','ʲ','ˡ','ᵐ','ⁿ','ˢ','ʳ'],
   'g2-sub':['₀','₁','₂','₃','₄','₅','₆','₇','₈','₉','₊','₋','ₐ','ᵢ','ⱼ','ₖ','ₗ','ₘ','ₙ','ₒ','ₚ','ᵣ','ₛ','ₜ','ᵤ','ᵥ'],
-  'g2-par':['^μν','^ρσ','^αβ','^μρ','^νσ','_μν','_ρσ','_αβ','_λρ','μνρσ','_μνρσ','^μ_ν','^ρ_σ','_μ^ν'],
+  'g2-par':['^μν','^ρσ','^αβ','^μρ','^νσ','_μν','_ρσ','_αβ','_λρ','_μνρσ','^μ_ν','^ρ_σ','_μ^ν'],
   'g2-idx':['^μ','^ν','^ρ','^σ','^λ','^τ','^α','^β','^γ','^δ','^0','^1','^2','^3',
-             '_μ','_ν','_ρ','_σ','_λ','_τ','_α','_β','_γ','_δ','_0','_1','_2','_3'],
-  // BH / GW / Cosm symbols
+            '_μ','_ν','_ρ','_σ','_λ','_τ','_α','_β','_γ','_δ','_0','_1','_2','_3'],
   'g4-sym':['r_S','r_+','r_−','r_H','2Gm/c²','M_⊙','J','a=J/Mc','Q','κ_H','Ω_H','T_H','S_H','A_H'],
-  'g5-sym':['h_μν','h̄_μν','γ_μν','A_+','A_×','e^+_ij','e^×_ij','κ=8πG/c⁴','ℓ_P','f_GW','λ_GW'],
+  'g5-sym':['h_μν','h̄_μν','γ_μν','A_+','A_×','κ=8πG/c⁴','ℓ_P','f_GW','λ_GW'],
   'g6-sym':['H','H₀','ȧ/a','q','Ω','Ω_m','Ω_Λ','Ω_r','Ω_k','ρ_c','z','a(t)','χ','d_L','d_A','t_0'],
-  // 8 Diacríticos
-  'g7-dot':['ẋ','ẏ','ż','ṙ','ṫ','ẋ^μ','ẍ^μ','ẋ^ν','ẋ^ρ','U^μ=ẋ^μ','ȧ','ä','Ḣ','ρ̇','ṗ'],
+  'g7-dot':['ẋ','ẏ','ż','ṙ','ṫ','ẋ^μ','ẍ^μ','ẋ^ν','ẋ^ρ','ȧ','ä','Ḣ','ρ̇','ṗ'],
   'g7-hat':['x̂','ŷ','ẑ','ĝ','n̂','ê','ℓ̂','h̄','h̄_μν','γ̄_μν','T̄_μν','ã(t)','k̃_μ','ξ̃'],
-  'g7-pr':['′','″','‴','⁗','x′','r′','t′','φ′','ϑ′','f′(r)','f(r)′'],
-  // 9 Relaciones
-  'g8-eq':['=','≠','≡','≈','≅','∼','≃','≤','≥','≪','≫','∝','def=',':='],
-  'g8-arr':['→','←','↔','⟶','⟵','⟷','⇒','⇐','⇔','↦','⟼','↑','↓','↗','↘','↕'],
-  'g8-log':['∀','∃','∄','∈','∉','⊂','⊃','⊆','⊇','∩','∪','∅','¬','∧','∨','⊕','⊗','⊙'],
-  // 10 Misc
-  'g9-ops':['±','∓','×','·','÷','/','^','_','|','‖','√','∛','!','%','∞'],
-  'g9-const':['G','c','ℏ','ħ','k_B','M_P','ℓ_P','t_P','μ₀','ε₀','e','m_e','m_p','G/c²','8πG','κ=8πG/c⁴'],
-  'g9-del':['(',')','{','}','[',']','⟨','⟩','|·|','‖·‖','⌈','⌉','⌊','⌋'],
-  'g9-num':['½','⅓','⅔','¼','¾','⅛','²','³','⁴','⁻¹','⁻²','i²=−1'],
-  'g9-pun':[',',';',':','…','+','-','*','=','"',"'",'«','»','~'],
+  'g7-pr':['′','″','‴','x′','r′','t′','φ′','ϑ′','f′(r)'],
+  'g8-eq':['=','≠','≡','≈','≅','∼','≃','≤','≥','≪','≫','∝',':='],
+  'g8-arr':['→','←','↔','⟶','⟵','⇒','⇐','⇔','↦','↑','↓','↗','↘'],
+  'g8-log':['∀','∃','∄','∈','∉','⊂','⊃','∩','∪','∅','¬','∧','∨','⊗','⊙'],
+  'g9-ops':['±','∓','×','·','÷','|','‖','√','∛','!','%','∞'],
+  'g9-const':['G','c','ℏ','ħ','k_B','M_P','ℓ_P','μ₀','ε₀','G/c²','8πG','κ=8πG/c⁴'],
+  'g9-del':['(',')','{','}','[',']','⟨','⟩','|·|','‖·‖'],
+  'g9-num':['½','⅓','⅔','¼','¾','²','³','⁴','⁻¹','⁻²'],
+  'g9-pun':[',',';',':','…','"',"'",'«','»','~'],
 };
 
 const EXPRS={
@@ -574,7 +667,7 @@ const EXPRS={
     {s:'η_μν = diag(−1,1,1,1)',n:'Minkowski (Perlick conv.)'},
     {s:'ds² = g_μν dx^μ dx^ν',n:'Elemento de línea'},
     {s:'g^μν g_νσ = δ^μ_σ',n:'Inversa de la métrica'},
-    {s:'g = det(g_μν)',n:'Determinante de la métrica'},
+    {s:'g = det(g_μν)',n:'Determinante métrica'},
     {s:'R^ρ_σμν',n:'Tensor de Riemann'},
     {s:'R_μν = R^σ_μσν',n:'Tensor de Ricci'},
     {s:'R = g^μν R_μν',n:'Escalar de Ricci'},
@@ -585,102 +678,90 @@ const EXPRS={
   'e3-efe':[
     {s:'G_μν = 8πG/c⁴ T_μν',n:'Ecuación de Einstein (sin Λ)'},
     {s:'G_μν + Λg_μν = κ T_μν',n:'Campo con constante cosmológica'},
-    {s:'κ = 8πG/c⁴',n:'Constante de acoplamiento'},
-    {s:'R_μν − ½g_μν R + Λg_μν = κ T_μν',n:'EFE completa (Perlick eq.)'},
+    {s:'R_μν − ½g_μν R + Λg_μν = κ T_μν',n:'EFE completa (Perlick)'},
     {s:'R_μν = 0',n:'Vacío (Schwarzschild, Kerr)'},
     {s:'∇_μ G^μν = 0',n:'Identidad de Bianchi contraída'},
     {s:'∇_μ T^μν = 0',n:'Conservación energía-momento'},
-    {s:'R^ρ_σμν = ∂_μΓ^ρ_νσ − ∂_νΓ^ρ_μσ + Γ^ρ_μλΓ^λ_νσ − Γ^ρ_νλΓ^λ_μσ',n:'Tensor Riemann explícito'},
+    {s:'R^ρ_σμν = ∂_μΓ^ρ_νσ − ∂_νΓ^ρ_μσ + Γ^ρ_μλΓ^λ_νσ − Γ^ρ_νλΓ^λ_μσ',n:'Riemann explícito'},
   ],
   'e3-geo':[
     {s:'ẍ^μ + Γ^μ_νσ ẋ^ν ẋ^σ = 0',n:'Ecuación geodésica (Perlick)'},
     {s:'L(x,ẋ) = ½g_μν ẋ^μ ẋ^ν',n:'Lagrangiana geodésica'},
     {s:'Γ^λ_μν = ½g^λρ(∂_μg_νρ + ∂_νg_μρ − ∂_ρg_μν)',n:'Christoffel (Perlick §4)'},
-    {s:'∇_μ X^σ = ∂_μ X^σ + Γ^σ_μν X^ν',n:'Deriv. cov. vector contrav.'},
-    {s:'∇_μ A_σ = ∂_μ A_σ − Γ^ρ_μσ A_ρ',n:'Deriv. cov. vector cov.'},
+    {s:'∇_μ X^σ = ∂_μ X^σ + Γ^σ_μν X^ν',n:'Deriv. cov. contrav.'},
+    {s:'∇_μ A_σ = ∂_μ A_σ − Γ^ρ_μσ A_ρ',n:'Deriv. cov. covariante'},
     {s:'∇_μ g_νρ = 0',n:'Compatibilidad métrica'},
     {s:'u^μ = dx^μ/dτ',n:'4-velocidad'},
     {s:'g_μν u^μ u^ν = −c²',n:'Normalización temporal'},
     {s:'p^μ = m u^μ',n:'4-momento'},
-    {s:'[∇_μ, ∇_ν] V^ρ = R^ρ_σμν V^σ',n:'Conmutador de derivadas cov.'},
+    {s:'[∇_μ, ∇_ν] V^ρ = R^ρ_σμν V^σ',n:'Conmutador covariante'},
   ],
   'e4-sch':[
     {s:'ds² = −(1−r_S/r)c²dt² + (1−r_S/r)⁻¹dr² + r²dΩ²',n:'Métrica Schwarzschild'},
     {s:'r_S = 2Gm/c²',n:'Radio de Schwarzschild'},
     {s:'dΩ² = dϑ² + sin²ϑ dφ²',n:'Ángulo sólido'},
     {s:'f(r) = 1 − r_S/r',n:'Factor redshift Schwarzschild'},
-    {s:'r̂ = r + r_S ln|r/r_S − 1|',n:'Coordenada tortoise'},
-    {s:'E = (1−r_S/r) c² dt/dτ',n:'Energía conservada (Schw.)'},
-    {s:'L = r² dφ/dτ',n:'Momento angular (Schw.)'},
+    {s:'E = (1−r_S/r) c² dt/dτ',n:'Energía conservada'},
+    {s:'L = r² dφ/dτ',n:'Momento angular'},
     {s:'V_eff(r) = c²(1−r_S/r)(1+L²/r²c²)',n:'Potencial efectivo'},
   ],
   'e4-kerr':[
-    {s:'ds² = −(1−r_S r/ρ²)c²dt² − (2r_S r a sin²ϑ/ρ²)c dtdφ + (ρ²/Δ)dr² + ρ²dϑ² + (r²+a²+r_S r a²sin²ϑ/ρ²)sin²ϑ dφ²',n:'Métrica de Kerr (Perlick BH §6)'},
     {s:'ρ² = r² + a²cos²ϑ',n:'Función ρ Kerr'},
     {s:'Δ = r² − r_S r + a²',n:'Función Δ Kerr'},
     {s:'a = J/(Mc)',n:'Parámetro de espín'},
     {s:'r_± = ½r_S ± √(¼r_S² − a²)',n:'Horizontes de Kerr'},
-    {s:'g_tφ ≠ 0',n:'Arrastre de marcos (frame-dragging)'},
   ],
   'e4-thermo':[
     {s:'T_H = ℏc³/(8πGMk_B)',n:'Temperatura de Hawking'},
     {s:'S_BH = k_B A/(4ℓ_P²)',n:'Entropía Bekenstein-Hawking'},
-    {s:'A = 4πr_H²',n:'Área del horizonte (Schw.)'},
     {s:'dM = T_H dS + Ω_H dJ + Φ_H dQ',n:'1ª ley termod. BH'},
     {s:'κ_H = c⁴/(4GM)',n:'Gravedad superficial (Schw.)'},
-    {s:'Ω_H = a c/(r_+² + a²)',n:'Velocidad angular horizonte Kerr'},
   ],
   'e5-lin':[
-    {s:'g_μν = η_μν + h_μν,  |h_μν| ≪ 1',n:'Linearización campo Einstein'},
+    {s:'g_μν = η_μν + h_μν',n:'Linearización campo Einstein'},
     {s:'h̄_μν = h_μν − ½η_μν h',n:'Perturbación traza-inversa'},
     {s:'□ h̄_μν = −2κ T_μν',n:'Campo linealizado con fuente'},
     {s:'□ h̄_μν = 0',n:'Vacío linealizado (Perlick GW §3)'},
     {s:'∂^μ h̄_μν = 0',n:'Gauge de Hilbert (Lorenz)'},
-    {s:'γ_μν = Re{A_μν e^(ik_ρ x^ρ)}',n:'Onda plano-armónica (Perlick)'},
+    {s:'γ_μν = Re{A_μν e^{ik_ρ x^ρ}}',n:'Onda plano-armónica (Perlick)'},
     {s:'k_μ k^μ = 0',n:'Vector de onda nulo'},
     {s:'h^TT_ij',n:'Gauge TT (transversal-traza nula)'},
   ],
   'e5-det':[
-    {s:'h_ij = (2G/c⁴r) İ̈^TT_ij',n:'Fórmula cuadrupolar (Perlick GW §3)'},
     {s:'I_ij = ∫ρ x^i x^j d³x',n:'Momento cuadrupolar de masa'},
     {s:'P_GW = G/(5c⁵) İ̈_ij İ̈^ij',n:'Potencia irradiada'},
-    {s:'ΔE = −G/(5c⁵)∫İ̈_ij İ̈^ij dt',n:'Pérdida de energía'},
     {s:'h_+ = h_× = h/2',n:'Polarizaciones + y ×'},
     {s:'Δx/x = h/2',n:'Efecto en detector interferométrico'},
     {s:'f_orb = (1/π)(GM/r³)^½',n:'Frecuencia orbital binaria'},
-    {s:'τ_chirp = 5c⁵/(256G³) M⁻²r⁴',n:'Tiempo de chirp'},
   ],
   'e6-rw':[
-    {s:'ds² = −c²dt² + a(t)²[dχ² + ξ(χ)²(dϑ² + sin²ϑ dφ²)]',n:'Métrica Robertson-Walker (Perlick Co §3.1)'},
+    {s:'ds² = −c²dt² + a(t)²[dχ² + ξ(χ)²(dϑ² + sin²ϑ dφ²)]',n:'Métrica Robertson-Walker'},
     {s:'ξ(χ) = sin χ  (K>0)',n:'Espacialmente esférico'},
-    {s:'ξ(χ) = χ        (K=0)',n:'Espacialmente plano'},
-    {s:'ξ(χ) = sinh χ (K<0)',n:'Espacialmente hiperbólico'},
+    {s:'ξ(χ) = χ  (K=0)',n:'Espacialmente plano'},
+    {s:'ξ(χ) = sinh χ  (K<0)',n:'Espacialmente hiperbólico'},
     {s:'(ȧ/a)² = 8πGρ/3 − Kc²/a² + Λc²/3',n:'1ª Ecuación de Friedmann'},
-    {s:'ä/a = −4πG/3(ρ + 3p/c²) + Λc²/3',n:'2ª Ecuación de Friedmann (aceleración)'},
-    {s:'ρ̇ + 3(ȧ/a)(ρ + p/c²) = 0',n:'Ecuación de continuidad fluido cosmológico'},
-    {s:'p = wρc²',n:'Ecuación de estado (w=0 polvo, w=1/3 rad.)'},
+    {s:'ä/a = −4πG/3(ρ + 3p/c²) + Λc²/3',n:'2ª Ecuación de Friedmann'},
+    {s:'ρ̇ + 3(ȧ/a)(ρ + p/c²) = 0',n:'Continuidad fluido cosmológico'},
+    {s:'p = wρc²',n:'Ecuación de estado'},
   ],
   'e6-par':[
     {s:'H = ȧ/a',n:'Parámetro de Hubble'},
-    {s:'H_0 ≈ 70 km/s/Mpc',n:'Constante de Hubble actual'},
     {s:'ρ_c = 3H²/(8πG)',n:'Densidad crítica'},
     {s:'Ω = ρ/ρ_c',n:'Parámetro de densidad total'},
     {s:'Ω_m + Ω_Λ + Ω_r + Ω_k = 1',n:'Suma de parámetros Ω'},
-    {s:'Ω_Λ = Λc²/(3H²)',n:'Energía oscura'},
     {s:'q = −ä a/ȧ²',n:'Parámetro de deceleración'},
     {s:'z = a_0/a − 1',n:'Corrimiento al rojo cosmológico'},
     {s:'d_L = (1+z) d_C',n:'Distancia de luminosidad'},
     {s:'d_A = d_C/(1+z)',n:'Distancia angular'},
-    {s:'T_CMB ≈ 2.725 K',n:'Temperatura del fondo cósmico'},
     {s:'Λ = 8πGρ_Λ/c²',n:'Constante cosmológica'},
   ],
 };
 
-/* ══════════════════════════════════════════════════════════
-   GREEK VARIANTS  (long-press shows these options)
-══════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   GREEK VARIANTS
+════════════════════════════════════════════════════════════ */
 const GV={
-  'α':['α','ᾱ','α̃','α̂'],
+  'α':['α','ᾱ','ά','α̃','α̂'],
   'β':['β','ϐ','Β'],
   'γ':['γ','Γ','γ̃'],
   'δ':['δ','Δ','∂'],
@@ -688,7 +769,7 @@ const GV={
   'ζ':['ζ','Ζ'],
   'η':['η','ƞ','Η','η̄'],
   'θ':['θ','ϑ','Θ','θ̂'],
-  'ι':['ι','ı','Ι'],
+  'ι':['ι','ί','ϊ','ı','Ι'],
   'κ':['κ','ϰ','Κ'],
   'λ':['λ','ƛ','Λ','λ̄'],
   'μ':['μ','Μ','ℳ','μ̄'],
@@ -700,29 +781,70 @@ const GV={
   'σ':['σ','ς','Σ','σ̂'],
   'ς':['ς','σ','Σ'],
   'τ':['τ','Τ','τ̄'],
-  'υ':['υ','Υ','ῡ'],
+  'υ':['υ','ύ','ϋ','Υ','ῡ'],
   'φ':['φ','ϕ','Φ','φ̂'],
   'χ':['χ','Χ','χ̃'],
   'ψ':['ψ','Ψ','ψ̃'],
-  'ω':['ω','Ω','ω̃','ω̂'],
-  // Uppercase
+  'ω':['ω','Ω','ω̃','ώ'],
   'Α':['Α','α'],'Β':['Β','β','ϐ'],'Γ':['Γ','γ'],
   'Δ':['Δ','δ','∂'],'Ε':['Ε','ε','ϵ'],'Ζ':['Ζ','ζ'],
   'Η':['Η','η'],'Θ':['Θ','θ','ϑ'],'Ι':['Ι','ι'],
   'Κ':['Κ','κ','ϰ'],'Λ':['Λ','λ','ƛ'],'Μ':['Μ','μ','ℳ'],
   'Ν':['Ν','ν'],'Ξ':['Ξ','ξ'],'Ο':['Ο','ο'],
   'Π':['Π','π','ϖ'],'Ρ':['Ρ','ρ','ϱ'],'Σ':['Σ','σ','ς'],
-  'Τ':['Τ','τ'],'Υ':['Υ','υ'],'Φ':['Φ','φ','ϕ'],
+  'Τ':['Τ','τ'],'Υ':['Υ','υ','ῡ'],'Φ':['Φ','φ','ϕ'],
   'Χ':['Χ','χ'],'Ψ':['Ψ','ψ'],'Ω':['Ω','ω'],
-  // Variants row
   'ϑ':['ϑ','θ','Θ'],'ϕ':['ϕ','φ','Φ'],'ϵ':['ϵ','ε','Ε'],
   'ϱ':['ϱ','ρ','Ρ'],'ϰ':['ϰ','κ','Κ'],'ϖ':['ϖ','π','Π'],
 };
 
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
+   TOUCH HELPER — FIX #2: require lift (touchend), cancel if scrolled >8px
+════════════════════════════════════════════════════════════ */
+function addTapHandler(el, onTap, onLongPress=null, longMs=440){
+  let tsx,tsy,moved=false,timer=null,longFired=false;
+
+  el.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    tsx=e.touches[0].clientX;tsy=e.touches[0].clientY;
+    moved=false;longFired=false;
+    el.classList.add('pressed');
+    if(onLongPress){
+      timer=setTimeout(()=>{
+        longFired=true;
+        el.classList.remove('pressed');
+        onLongPress();
+      },longMs);
+    }
+  },{passive:false});
+
+  el.addEventListener('touchmove',e=>{
+    const dx=e.touches[0].clientX-tsx;
+    const dy=e.touches[0].clientY-tsy;
+    if(Math.abs(dx)>8||Math.abs(dy)>8){
+      moved=true;
+      if(timer){clearTimeout(timer);timer=null;}
+      el.classList.remove('pressed');
+    }
+  },{passive:true});
+
+  el.addEventListener('touchend',e=>{
+    if(timer){clearTimeout(timer);timer=null;}
+    el.classList.remove('pressed');
+    if(!moved&&!longFired) onTap();
+  });
+
+  el.addEventListener('touchcancel',()=>{
+    if(timer){clearTimeout(timer);timer=null;}
+    el.classList.remove('pressed');
+    moved=true;
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
    BUILD SYMBOL GRIDS
-══════════════════════════════════════════════════════════ */
-function buildGrid(id, syms, isGreek=false){
+════════════════════════════════════════════════════════════ */
+function buildGrid(id,syms,isGreek=false){
   const el=document.getElementById(id);
   if(!el)return;
   syms.forEach(sym=>{
@@ -732,101 +854,94 @@ function buildGrid(id, syms, isGreek=false){
     if(sym.length>10)cls.push('xsm');
     if(isGreek&&GV[sym]&&GV[sym].length>1)cls.push('has-var');
     d.className=cls.join(' ');
-    d.textContent=sym;
+    d.innerHTML=exprToHTML(sym); // FIX #4 display: renders sub/sup in keys too
 
     if(isGreek&&GV[sym]&&GV[sym].length>1){
-      setupGreekKey(d,sym);
+      addTapHandler(d,
+        ()=>insExprRaw(sym),
+        ()=>showVariantPopup(sym,d)
+      );
     } else {
-      d.addEventListener('pointerdown',e=>{
-        e.preventDefault();
-        insExprRaw(sym);
-      });
+      addTapHandler(d,()=>insExprRaw(sym));
     }
     el.appendChild(d);
   });
 }
 
-function buildExprs(id,arr,colorClass=''){
+function buildExprs(id,arr,cls=''){
   const el=document.getElementById(id);
   if(!el)return;
   arr.forEach(x=>{
     const d=document.createElement('div');
-    d.className='ec'+(colorClass?' '+colorClass:'');
+    d.className='ec'+(cls?' '+cls:'');
     d.innerHTML=`<span class="ec-s">${exprToHTML(x.s)}</span><span class="ec-n">${x.n}</span>`;
-    d.addEventListener('pointerdown',e=>{
-      e.preventDefault();
-      insExprRaw(x.s);
-    });
+    addTapHandler(d,()=>insExprRaw(x.s));
     el.appendChild(d);
   });
 }
 
-/* ══════════════════════════════════════════════════════════
-   GREEK VARIANTS POPUP
-══════════════════════════════════════════════════════════ */
-let gpTimer=null, gpActive=false;
+/* ════════════════════════════════════════════════════════════
+   GREEK POPUP
+════════════════════════════════════════════════════════════ */
+let gpActive=false;
 const popup=document.getElementById('greek-popup');
 
-function setupGreekKey(el,char){
-  el.addEventListener('touchstart',e=>{
-    e.preventDefault();
-    gpActive=false;
-    gpTimer=setTimeout(()=>{
-      gpActive=true;
-      showVariantPopup(char,el);
-    },420);
-  },{passive:false});
-  el.addEventListener('touchend',e=>{
-    e.preventDefault();
-    if(gpTimer){clearTimeout(gpTimer);gpTimer=null}
-    if(!gpActive) insExprRaw(char);
-    gpActive=false;
-  });
-  el.addEventListener('touchmove',e=>{
-    if(gpTimer){clearTimeout(gpTimer);gpTimer=null}
-  });
-}
-
-function showVariantPopup(char,el){
-  const variants=GV[char]||[char];
+function showVariantPopup(char,anchor){
+  gpActive=true;
+  const vars=GV[char]||[char];
   popup.innerHTML='';
-  variants.forEach((v,i)=>{
+  vars.forEach((v,i)=>{
     const btn=document.createElement('div');
     btn.className='vk'+(i===0?' selected':'');
     btn.textContent=v;
     btn.addEventListener('touchstart',e=>{
-      e.preventDefault();
-      e.stopPropagation();
-      insExprRaw(v);
-      hideVariantPopup();
-    });
+      e.preventDefault();e.stopPropagation();
+      insExprRaw(v);hideVariantPopup();
+    },{passive:false});
     popup.appendChild(btn);
   });
-  const rect=el.getBoundingClientRect();
-  const pw=variants.length*52+10;
-  let left=rect.left-10;
-  if(left+pw>window.innerWidth-6) left=window.innerWidth-pw-6;
-  if(left<4) left=4;
-  const top=Math.max(rect.top-60,10);
+  const rect=anchor.getBoundingClientRect();
+  const pw=vars.length*52+14;
+  let left=rect.left;
+  if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;
+  if(left<4)left=4;
   popup.style.left=left+'px';
-  popup.style.top=top+'px';
+  popup.style.top=Math.max(rect.top-62,10)+'px';
   popup.classList.add('visible');
 }
 
 function hideVariantPopup(){
   popup.classList.remove('visible');
   gpActive=false;
-  if(gpTimer){clearTimeout(gpTimer);gpTimer=null}
 }
 
 document.addEventListener('touchstart',e=>{
-  if(!popup.contains(e.target)&&!e.target.closest('.s'))
+  if(gpActive&&!popup.contains(e.target)&&!e.target.closest('.s'))
     hideVariantPopup();
 },{passive:true});
 
-/* ══════════════════════════════════════════════════════════
-   CUSTOM TEXT KEYBOARD
-══════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   FIX #5: QUICK MATH BAR
+════════════════════════════════════════════════════════════ */
+const MATH_BAR=[
+  {l:'=',v:'='},{l:'+',v:'+'},{l:'−',v:'−'},{l:'×',v:'×'},{l:'/',v:'/'},
+  {l:'(',v:'('},{l:')',v:')'},{l:'²',v:'²'},{l:'√',v:'√'},{l:'∞',v:'∞'},
+  {l:'_sp_',v:' '},
+];
+function buildMathBar(){
+  const bar=document.getElementById('mathbar');
+  MATH_BAR.forEach(({l,v})=>{
+    const k=document.createElement('div');
+    k.className='mkey'+(l==='_sp_'?' sp':'');
+    k.textContent=l==='_sp_'?'espacio':l;
+    addTapHandler(k,()=>insChar(v));
+    bar.appendChild(k);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
+   CUSTOM KEYBOARD (Escritura)
+════════════════════════════════════════════════════════════ */
 let kbShift=0; // 0=off 1=once 2=caps
 let kbMode='abc';
 
@@ -851,18 +966,17 @@ const KB_SPEC=[
 
 function buildKB(){
   const wrap=document.getElementById('kb-wrap');
+  if(!wrap)return;
   wrap.innerHTML='';
-  const modes=[
-    {id:'kb-abc',rows:KB_ABC},
-    {id:'kb-123',rows:KB_123},
-    {id:'kb-spec',rows:KB_SPEC}
+  const configs=[
+    {id:'kb-abc',rows:KB_ABC,show:kbMode==='abc'},
+    {id:'kb-123',rows:KB_123,show:kbMode==='123'},
+    {id:'kb-spec',rows:KB_SPEC,show:kbMode==='spec'},
   ];
-  modes.forEach(({id,rows})=>{
-    const div=document.createElement('div');
-    div.className='kb-mode'+(id==='kb-abc'&&kbMode==='abc'?' active':
-                              id==='kb-123'&&kbMode==='123'?' active':
-                              id==='kb-spec'&&kbMode==='spec'?' active':'');
-    div.id=id;
+  configs.forEach(({id,rows,show})=>{
+    const modeDiv=document.createElement('div');
+    modeDiv.className='kb-mode'+(show?' active':'');
+    modeDiv.id=id;
     rows.forEach(row=>{
       const rowDiv=document.createElement('div');
       rowDiv.className='kb-row';
@@ -870,87 +984,70 @@ function buildKB(){
         const btn=document.createElement('div');
         btn.className='kb-key';
         btn.dataset.key=key;
-
         if(key==='SHIFT'){
-          btn.classList.add('fn','shift-key');
-          btn.id='kb-shift';
-          btn.textContent='⇧';
+          btn.classList.add('fn');btn.id='kb-shift';
+          btn.textContent=kbShift===2?'⇪':'⇧';
           if(kbShift===1)btn.classList.add('shift-on');
           if(kbShift===2)btn.classList.add('caps-on');
           btn.addEventListener('touchstart',e=>{e.preventDefault();doShift()},{passive:false});
         } else if(key==='BKSP'){
-          btn.classList.add('fn');
-          btn.textContent='⌫';
-          // Allow repeat on hold
-          let bsInterval=null;
+          btn.classList.add('fn');btn.textContent='⌫';
+          let bsiv=null;
           btn.addEventListener('touchstart',e=>{
             e.preventDefault();doBksp();
-            bsInterval=setInterval(doBksp,120);
+            bsiv=setInterval(doBksp,100);
           },{passive:false});
-          btn.addEventListener('touchend',()=>{clearInterval(bsInterval)});
-          btn.addEventListener('touchcancel',()=>{clearInterval(bsInterval)});
+          btn.addEventListener('touchend',()=>clearInterval(bsiv));
+          btn.addEventListener('touchcancel',()=>clearInterval(bsiv));
         } else if(key==='SPACE'){
-          btn.classList.add('space-key');
-          btn.textContent='espacio';
+          btn.classList.add('fn','sp');btn.textContent='espacio';
           btn.addEventListener('touchstart',e=>{e.preventDefault();insChar(' ')},{passive:false});
         } else if(key==='RETURN'){
-          btn.classList.add('return-key','fn');
-          btn.textContent='↵';
+          btn.classList.add('fn','ret');btn.textContent='↵';
           btn.addEventListener('touchstart',e=>{e.preventDefault();insChar('\n')},{passive:false});
         } else if(key==='123'){
-          btn.classList.add('fn');
-          btn.textContent='123';
+          btn.classList.add('fn');btn.textContent='123';
           btn.addEventListener('touchstart',e=>{e.preventDefault();setKbMode('123')},{passive:false});
         } else if(key==='ABC'){
-          btn.classList.add('fn');
-          btn.textContent='ABC';
+          btn.classList.add('fn');btn.textContent='ABC';
           btn.addEventListener('touchstart',e=>{e.preventDefault();setKbMode('abc')},{passive:false});
-        } else if(key==='#+='){ 
-          btn.classList.add('fn');
-          btn.textContent='#+=';
-          btn.style.fontSize='11px';
+        } else if(key===' #+='){
+          btn.classList.add('fn');btn.textContent='#+=';btn.style.fontSize='11px';
           btn.addEventListener('touchstart',e=>{e.preventDefault();setKbMode('spec')},{passive:false});
         } else {
-          // Normal char
-          if(/[0-9]/.test(key))btn.classList.add('num');
-          const lower=key;
-          const upper=key.toUpperCase();
-          btn.dataset.lower=lower;
-          btn.dataset.upper=upper;
-          btn.dataset.char=key;
-          btn.textContent=(kbShift>0)?upper:lower;
+          const lower=key,upper=key.toUpperCase();
+          btn.dataset.lower=lower;btn.dataset.upper=upper;
+          btn.textContent=kbShift>0?upper:lower;
           btn.addEventListener('touchstart',e=>{
             e.preventDefault();
+            btn.classList.add('pressed');
             const c=kbShift>0?upper:lower;
             insChar(c);
             if(kbShift===1){kbShift=0;updateShiftDisplay();}
+            setTimeout(()=>btn.classList.remove('pressed'),100);
           },{passive:false});
         }
         rowDiv.appendChild(btn);
       });
-      div.appendChild(rowDiv);
+      modeDiv.appendChild(rowDiv);
     });
-    wrap.appendChild(div);
+    wrap.appendChild(modeDiv);
   });
 }
 
 function setKbMode(m){
   kbMode=m;
-  document.querySelectorAll('.kb-mode').forEach(el=>{
-    el.classList.remove('active');
-  });
   const map={abc:'kb-abc','123':'kb-123',spec:'kb-spec'};
-  const target=document.getElementById(map[m]);
-  if(target)target.classList.add('active');
-  // Rebuild to reflect mode (needed for labels)
-  buildKB();
+  document.querySelectorAll('.kb-mode').forEach(el=>el.classList.remove('active'));
+  const t=document.getElementById(map[m]);
+  if(t)t.classList.add('active');
+  buildKB(); // rebuild to update shift labels
 }
 
 function doShift(){
   kbShift=(kbShift+1)%3;
   updateShiftDisplay();
 }
-
 function updateShiftDisplay(){
   const sb=document.getElementById('kb-shift');
   if(!sb)return;
@@ -963,97 +1060,69 @@ function updateShiftDisplay(){
   });
 }
 
-/* ══════════════════════════════════════════════════════════
-   LOUPE / MAGNIFIER
-══════════════════════════════════════════════════════════ */
-let loupeActive=false, loupeTimer=null;
+/* ════════════════════════════════════════════════════════════
+   LOUPE (magnifier when dragging cursor in #ta)
+════════════════════════════════════════════════════════════ */
+let loupeActive=false,loupeTimer=null;
 const loupe=document.getElementById('loupe');
 const loupeTxt=document.getElementById('loupe-txt');
 const ta=document.getElementById('ta');
 
-ta.addEventListener('touchstart',function(e){
+ta.addEventListener('touchstart',e=>{
   loupeTimer=setTimeout(()=>{
     loupeActive=true;
     updateLoupe(e.touches[0].clientX,e.touches[0].clientY);
-  },450);
+  },480);
 },{passive:true});
 
-ta.addEventListener('touchmove',function(e){
+ta.addEventListener('touchmove',e=>{
   if(loupeActive){
     e.preventDefault();
-    const t=e.touches[0];
-    moveCursorToPoint(t.clientX,t.clientY);
-    updateLoupe(t.clientX,t.clientY);
-  } else {
-    if(loupeTimer){clearTimeout(loupeTimer);loupeTimer=null}
-  }
+    moveCursorToPoint(e.touches[0].clientX,e.touches[0].clientY);
+    updateLoupe(e.touches[0].clientX,e.touches[0].clientY);
+  } else if(loupeTimer){clearTimeout(loupeTimer);loupeTimer=null;}
 },{passive:false});
 
-ta.addEventListener('touchend',function(){
-  if(loupeTimer){clearTimeout(loupeTimer);loupeTimer=null}
-  loupeActive=false;
-  loupe.style.display='none';
+ta.addEventListener('touchend',()=>{
+  if(loupeTimer){clearTimeout(loupeTimer);loupeTimer=null;}
+  loupeActive=false;loupe.style.display='none';
 });
 
 function moveCursorToPoint(x,y){
   let range=null;
-  if(document.caretRangeFromPoint){
-    range=document.caretRangeFromPoint(x,y);
-  } else if(document.caretPositionFromPoint){
+  if(document.caretRangeFromPoint)range=document.caretRangeFromPoint(x,y);
+  else if(document.caretPositionFromPoint){
     const pos=document.caretPositionFromPoint(x,y);
     if(pos){range=document.createRange();range.setStart(pos.offsetNode,pos.offset);range.collapse(true);}
   }
-  if(range){
-    const sel=window.getSelection();
-    sel.removeAllRanges();sel.addRange(range);
-  }
+  if(range){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);}
 }
 
 function updateLoupe(x,y){
-  // Get text context around cursor
   const sel=window.getSelection();
   let before='',after='';
   if(sel&&sel.rangeCount){
     try{
       const r=sel.getRangeAt(0);
-      const bRange=document.createRange();
-      bRange.setStart(ta,0);
-      bRange.setEnd(r.startContainer,r.startOffset);
-      before=bRange.toString().slice(-4);
-      const aRange=document.createRange();
-      aRange.setStart(r.endContainer,r.endOffset);
-      aRange.setEnd(ta,ta.childNodes.length||0);
-      after=aRange.toString().slice(0,4);
-    }catch(e){before='';after='';}
+      const br=document.createRange();
+      br.setStart(ta,0);br.setEnd(r.startContainer,r.startOffset);
+      before=br.toString().slice(-5);
+      const ar=document.createRange();
+      ar.setStart(r.endContainer,r.endOffset);ar.setEnd(ta,ta.childNodes.length||0);
+      after=ar.toString().slice(0,5);
+    }catch(e){}
   }
   loupeTxt.innerHTML=escH(before)+'<span class="loupe-cur"></span>'+escH(after);
-  // Position above touch
-  const lw=104,lh=54;
-  let lx=x-lw/2,ly=y-lh-18;
+  const lw=112,lh=54;
+  let lx=x-lw/2,ly=y-lh-20;
   lx=Math.max(4,Math.min(lx,window.innerWidth-lw-4));
   ly=Math.max(4,ly);
   loupe.style.left=lx+'px';loupe.style.top=ly+'px';loupe.style.display='flex';
 }
 
-/* ══════════════════════════════════════════════════════════
-   PREVENT NATIVE KEYBOARD
-══════════════════════════════════════════════════════════ */
-// Keep focus on ta but suppress native kb
-ta.addEventListener('focus',()=>{
-  // On iOS, force a blur + re-focus trick doesn't work well.
-  // inputmode="none" is the primary mechanism.
-});
-
-// Prevent scroll bounce while using keyboard area
-document.addEventListener('touchmove',e=>{
-  if(!e.target.closest('.panels')&&!e.target.closest('#ta')&&!e.target.closest('.aip')){
-    e.preventDefault();
-  }
-},{passive:false});
-
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
    AI EXPLAIN
-══════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════ */
 async function doAI(){
   const expr=getForCopy().trim();
   if(!expr){showToast('Escribe una expresión primero');return}
@@ -1068,23 +1137,19 @@ async function doAI(){
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:1000,
-        system:`Eres un profesor experto en relatividad general, agujeros negros, ondas gravitacionales y cosmología, familiarizado con los textos de Volker Perlick (Bremen). El estudiante colombiano escribe expresiones en notación textual donde _μ significa subíndice μ y ^μ significa superíndice μ.
-Responde en español. Explica: (1) qué es cada tensor/símbolo, (2) su significado físico, (3) en qué contexto de Perlick aparece. Sé conciso, claro, pedagógico. Sin markdown ni asteriscos.`,
+        system:`Eres un profesor experto en relatividad general, agujeros negros, ondas gravitacionales y cosmología, familiarizado con los textos de Volker Perlick (Bremen). El estudiante colombiano escribe expresiones donde _μ significa subíndice μ y ^μ significa superíndice μ. Responde en español. Explica: (1) qué es cada tensor/símbolo, (2) su significado físico, (3) en qué contexto de Perlick aparece. Sé conciso, claro, pedagógico. Sin markdown ni asteriscos.`,
         messages:[{role:'user',content:`Explícame esta expresión/ecuación: ${expr}`}]
       })
     });
     const data=await r.json();
-    const msg=data.content?.map(b=>b.text||'').join('')||'Sin respuesta.';
-    txt.textContent=msg;
-  }catch(e){
-    txt.textContent='Error de conexión. Revisa tu internet.';
-  }
+    txt.textContent=data.content?.map(b=>b.text||'').join('')||'Sin respuesta.';
+  }catch(e){txt.textContent='Error de conexión. Revisa tu internet.';}
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
    INIT
-══════════════════════════════════════════════════════════ */
-// Build grids
+════════════════════════════════════════════════════════════ */
+// Build all symbol grids
 buildGrid('g0-lo',DATA['g0-lo'],true);
 buildGrid('g0-up',DATA['g0-up'],true);
 buildGrid('g0-va',DATA['g0-va'],true);
@@ -1108,11 +1173,21 @@ buildExprs('e5-det',EXPRS['e5-det'],'bl');
 buildExprs('e6-rw',EXPRS['e6-rw'],'vi');
 buildExprs('e6-par',EXPRS['e6-par'],'vi');
 
-// Build keyboard
+// Build math bar and keyboard
+buildMathBar();
 buildKB();
 
-// Auto-focus composer on load (without triggering native kb)
-setTimeout(()=>ta.focus(),300);
+// Start on Escritura tab (keyboard at bottom, panels hidden)
+switchTab(0, document.querySelector('.tab'));
+
+// Prevent native bounce scroll outside scrollable areas
+document.addEventListener('touchmove',e=>{
+  const ok=e.target.closest('.panels')||
+            e.target.closest('#ta')||
+            e.target.closest('.aip')||
+            e.target.closest('.tabbar');
+  if(!ok)e.preventDefault();
+},{passive:false});
 </script>
 </body>
 </html>
