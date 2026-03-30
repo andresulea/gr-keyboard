@@ -279,7 +279,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
   <div class="hdr">
     <span class="hdr-ic">∂</span>
     <div class="hdr-t">
-      <h1>Relatividad General · v5</h1>
+      <h1>Relatividad General · v6</h1>
       <p>Perlick · GR · Agujeros Negros · Ondas · Cosmología</p>
     </div>
     <span class="badge">PWA</span>
@@ -500,15 +500,49 @@ function exprToHTML(str){
 
 /* ════════════════════════════════════════════════════════════
    FOCUS MANAGEMENT
-   FIX #3: always move cursor to END, not start
 ════════════════════════════════════════════════════════════ */
+
+/* Safari iOS inserts <div><br></div> into a focused empty contenteditable.
+   This creates a phantom blank line above the first typed character.
+   We detect and remove it immediately after focus fires. */
+function cleanSafariEmptyDiv(){
+  const ta=TA();
+  // Safari's auto-inserted empty block patterns
+  if(ta.innerHTML==='<div><br></div>' ||
+     ta.innerHTML==='<div></div>'     ||
+     ta.innerHTML==='<br>'){
+    ta.innerHTML='';
+    // Place cursor at (ta, 0) — absolute top-left, no offset
+    const sel=window.getSelection();
+    const r=document.createRange();
+    r.setStart(ta,0);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+}
+
+/* Called once after first keypress to make sure cursor is at a valid
+   position inside #ta (not in the void left by Safari cleanup). */
+function ensureCursorInTA(){
+  const ta=TA();
+  const sel=window.getSelection();
+  if(!sel||!sel.rangeCount){
+    const r=document.createRange();
+    r.setStart(ta,ta.childNodes.length);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+}
+
 function ensureFocusAtEnd(){
   const ta=TA();
   ta.focus();
   const sel=window.getSelection();
   const range=document.createRange();
   range.selectNodeContents(ta);
-  range.collapse(false); // collapse to END
+  range.collapse(false);
   sel.removeAllRanges();
   sel.addRange(range);
 }
@@ -517,28 +551,55 @@ function ensureFocus(){
   const ta=TA();
   if(document.activeElement!==ta){
     ta.focus();
-    const sel=window.getSelection();
-    if(!sel||!sel.rangeCount){
-      const r=document.createRange();
-      r.selectNodeContents(ta);r.collapse(false);
-      sel.removeAllRanges();sel.addRange(r);
-    }
+    // After focusing, clean any Safari phantom div, THEN cursor to end
+    requestAnimationFrame(()=>{
+      cleanSafariEmptyDiv();
+      ensureCursorInTA();
+    });
   }
 }
 
 /* ════════════════════════════════════════════════════════════
-   INSERT — with cursor baseline reset
-   FIX #4: after inserting sup/sub, cursor exits to baseline
+   INSERT EXPRESSION — reliable baseline reset
+   After insertHTML the cursor is INSIDE the last <sup>/<sub>.
+   We fix this by creating a TEXT NODE as a DIRECT CHILD of #ta,
+   which is guaranteed to be at the root/baseline level.
+   A regular space ' ' is used so there is visual separation.
 ════════════════════════════════════════════════════════════ */
 function insExprRaw(str){
   hideVariantPopup();
   ensureFocus();
+  const ta=TA();
   const html=exprToHTML(str);
   document.execCommand('insertHTML',false,html);
-  // FIX 3: Insert a zero-width space as plain TEXT (not HTML).
-  // insertText always creates a plain text node at baseline, breaking out of
-  // any SUB/SUP context. We strip these on copy via getForCopy().
-  document.execCommand('insertText',false,'\u200B');
+
+  // Find the direct child of ta that currently contains/follows the cursor
+  const sel=window.getSelection();
+  let anchorNode=null;
+  if(sel&&sel.rangeCount){
+    let node=sel.getRangeAt(0).startContainer;
+    // Walk up DOM until node is a direct child of ta
+    while(node&&node.parentNode!==ta) node=node.parentNode;
+    anchorNode=node;
+  }
+
+  // Create a plain-text space node at the ROOT of ta (not inside sub/sup)
+  const spacer=document.createTextNode(' ');
+  if(anchorNode&&anchorNode!==ta&&anchorNode.nextSibling){
+    ta.insertBefore(spacer,anchorNode.nextSibling);
+  } else {
+    ta.appendChild(spacer);
+  }
+
+  // Place cursor INSIDE the spacer text node (after the space)
+  // This guarantees baseline rendering for subsequent characters
+  const newSel=window.getSelection();
+  const newRange=document.createRange();
+  newRange.setStart(spacer,1); // position 1 = after the space
+  newRange.collapse(true);
+  newSel.removeAllRanges();
+  newSel.addRange(newRange);
+
   scrollToBottom();
 }
 
@@ -592,16 +653,15 @@ function doClear(){
 function getForCopy(){
   function walk(node){
     if(node.nodeType===3){
-      // Strip zero-width spaces used as baseline anchors
+      // Strip any leftover zero-width spaces (legacy from v5)
       return node.textContent.replace(/\u200B/g,'');
     }
     if(node.nodeName==='SUB'){
-      const inner=Array.from(node.childNodes).map(walk).join('').replace(/\u200B/g,'');
-      // Always use _{...} with braces so pasted text clearly shows subscripts
+      const inner=Array.from(node.childNodes).map(walk).join('');
       return '_{'+inner+'}';
     }
     if(node.nodeName==='SUP'){
-      const inner=Array.from(node.childNodes).map(walk).join('').replace(/\u200B/g,'');
+      const inner=Array.from(node.childNodes).map(walk).join('');
       return '^{'+inner+'}';
     }
     if(node.nodeName==='BR')return '\n';
@@ -666,8 +726,9 @@ function switchTab(i,el){
   }
 
   hideVariantPopup();
-  // FIX #3: cursor to end always
-  setTimeout(ensureFocusAtEnd,60);
+  // Do NOT auto-focus #ta on tab switch — calling ta.focus() on an empty
+  // contenteditable in Safari triggers the phantom-div bug.
+  // The cursor position is preserved from wherever it was.
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1234,8 +1295,14 @@ buildExprs('e6-par',EXPRS['e6-par'],'vi');
 buildMathBar();
 buildKB();
 
-// Start on Escritura tab (keyboard at bottom, panels hidden)
+// Start on Escritura tab (keyboard at bottom, panels hidden) — NO auto-focus
 switchTab(0, document.querySelector('.tab'));
+
+// Safari phantom-div cleanup: fires on every focus of #ta
+// Must use requestAnimationFrame so Safari has time to insert its empty div
+document.getElementById('ta').addEventListener('focusin',()=>{
+  requestAnimationFrame(cleanSafariEmptyDiv);
+});
 
 // Prevent native bounce scroll outside scrollable areas
 document.addEventListener('touchmove',e=>{
