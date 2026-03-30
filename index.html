@@ -49,13 +49,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
 /* ── Display area ── */
 .dw{padding:8px 12px 6px;background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0}
 #ta{
-  min-height:62px;max-height:108px;background:var(--bg);
+  /* FIX #2: taller box, always shows the latest text */
+  min-height:130px;max-height:220px;background:var(--bg);
   border:1px solid var(--bdr);border-radius:8px;
   color:var(--chalk);font-family:var(--mono);font-size:16px;line-height:1.65;
   padding:9px 11px;outline:none;overflow-y:auto;
   white-space:pre-wrap;word-break:break-word;
   -webkit-user-select:text;user-select:text;cursor:text;
   transition:border-color .18s;
+  /* Scroll to bottom is driven by JS after every insert */
 }
 #ta:focus{border-color:var(--grb);caret-color:var(--gr)}
 #ta:empty::before{content:attr(data-ph);color:var(--faint);font-family:var(--serif);
@@ -198,12 +200,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
   vertical-align:middle;animation:blink 1s step-end infinite}
 @keyframes blink{50%{opacity:0}}
 
-/* ── FIX #1: Keyboard section — ALWAYS at the bottom, correct height ── */
-/* This sits OUTSIDE .panels, as a flex child of .app */
+/* ── Keyboard section — pinned to BOTTOM via margin-top:auto ── */
+/* As a flex child of .app (column), margin-top:auto eats all
+   remaining space above it, so the keyboard always sticks to
+   the bottom of the screen exactly like the native iOS keyboard. */
 #kb-section{
   flex-shrink:0;
   background:#080f09;
-  /* Will be shown/hidden by JS */
+  margin-top:auto;   /* ← THE KEY: pushes keyboard to bottom */
 }
 .kb-wrap{padding:5px 3px 16px;-webkit-user-select:none;user-select:none}
 .kb-row{display:flex;gap:5px;margin-bottom:8px;justify-content:center;padding:0 3px}
@@ -243,7 +247,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
   <div class="hdr">
     <span class="hdr-ic">∂</span>
     <div class="hdr-t">
-      <h1>Relatividad General · v4</h1>
+      <h1>Relatividad General · v4.1</h1>
       <p>Perlick · GR · Agujeros Negros · Ondas · Cosmología</p>
     </div>
     <span class="badge">PWA</span>
@@ -516,6 +520,14 @@ function insExprRaw(str){
     // Fallback: walk up DOM to exit sub/sup context
     exitSubSup();
   }
+  scrollToBottom();
+}
+
+/* FIX #2: always scroll the text box to show the latest text */
+function scrollToBottom(){
+  const ta=TA();
+  // Use requestAnimationFrame so DOM has updated before measuring
+  requestAnimationFrame(()=>{ta.scrollTop=ta.scrollHeight;});
 }
 
 function exitSubSup(){
@@ -542,6 +554,7 @@ function exitSubSup(){
 function insChar(c){
   ensureFocus();
   document.execCommand('insertText',false,c);
+  scrollToBottom();
 }
 
 function doBksp(){
