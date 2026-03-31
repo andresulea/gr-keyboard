@@ -229,27 +229,37 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
 
 /* iOS-style callout bubble that appears ABOVE key when pressed */
 .kb-key.pressed{
-  background:#4a7a4b;
+  background:#3a5a3c;
   box-shadow:none;
   transform:translateY(1px);
 }
-/* The bubble above — letter callout like iPhone */
-.kb-key.letter.pressed::after{
-  content:attr(data-show);
-  position:absolute;
-  bottom:calc(100% + 6px);
-  left:50%;transform:translateX(-50%);
-  min-width:42px;height:52px;
-  background:#4a7a4b;
-  border-radius:8px 8px 8px 8px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;color:#fff;
-  box-shadow:0 2px 10px rgba(0,0,0,.6);
-  z-index:100;
-  pointer-events:none;
-  /* Trick: make ::after a flex box via display:flex doesn't work on pseudo-elements
-     so use padding instead */
-  padding:12px 8px 4px;
+.s.pressed,.mkey.pressed,.vk.pressed{
+  background:var(--grd);border-color:var(--grb);transform:scale(.88);
+}
+
+/* ── Global key popup — appears above any pressed key ── */
+#key-popup{
+  position:fixed;z-index:5000;pointer-events:none;
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+  min-width:46px;height:56px;
+  background:#2d5030;
+  border-radius:10px 10px 4px 4px;
+  box-shadow:0 4px 18px rgba(0,0,0,.65);
+  padding:2px 12px 4px;
+}
+/* Letter in popup */
+#key-popup span{
+  font-family:var(--serif);font-size:28px;color:#fff;
+  line-height:1.2;display:block;
+}
+#key-popup span.sm{font-size:16px;font-family:var(--mono)}
+/* Downward arrow */
+#key-popup::after{
+  content:'';position:absolute;top:100%;left:50%;
+  transform:translateX(-50%);
+  border:8px solid transparent;border-top-color:#2d5030;
+  border-bottom:none;width:0;height:0;
 }
 
 .kb-key.fn{background:var(--kb-fn);font-size:14px;font-family:var(--mono);
@@ -279,7 +289,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
   <div class="hdr">
     <span class="hdr-ic">∂</span>
     <div class="hdr-t">
-      <h1>Relatividad General · v6</h1>
+      <h1>Relatividad General · v7</h1>
       <p>Perlick · GR · Agujeros Negros · Ondas · Cosmología</p>
     </div>
     <span class="badge">PWA</span>
@@ -583,8 +593,10 @@ function insExprRaw(str){
     anchorNode=node;
   }
 
-  // Create a plain-text space node at the ROOT of ta (not inside sub/sup)
-  const spacer=document.createTextNode(' ');
+  // Create an INVISIBLE zero-width text node directly in #ta (not inside sub/sup).
+  // \u200B has no visual width so no extra space appears between symbol taps.
+  // It IS stripped in getForCopy() so the copied text stays clean.
+  const spacer=document.createTextNode('\u200B');
   if(anchorNode&&anchorNode!==ta&&anchorNode.nextSibling){
     ta.insertBefore(spacer,anchorNode.nextSibling);
   } else {
@@ -696,6 +708,30 @@ function showToast(msg){
 }
 
 /* ════════════════════════════════════════════════════════════
+   KEY POPUP — iOS-style bubble above pressed key
+   Works for ALL key types: writing keyboard, symbol grids,
+   Greek letters, operators, math bar.
+════════════════════════════════════════════════════════════ */
+const _kpEl=document.getElementById('key-popup');
+const _kpLbl=document.getElementById('key-popup-label');
+
+function showKeyPopup(el, labelHTML, isSmall=false){
+  const rect=el.getBoundingClientRect();
+  const pw=Math.max(46, rect.width+4);
+  _kpLbl.innerHTML=labelHTML;
+  _kpLbl.className=isSmall?'sm':'';
+  _kpEl.style.width=pw+'px';
+  _kpEl.style.display='flex';
+  let lx=rect.left+rect.width/2-pw/2;
+  let ly=rect.top-64;
+  lx=Math.max(4,Math.min(lx,window.innerWidth-pw-4));
+  ly=Math.max(56,ly); // don't go above header
+  _kpEl.style.left=lx+'px';
+  _kpEl.style.top=ly+'px';
+}
+function hideKeyPopup(){_kpEl.style.display='none';}
+
+/* ════════════════════════════════════════════════════════════
    TABS
    FIX #1: toggle panels vs keyboard section
    FIX #3: cursor always stays at end
@@ -726,9 +762,13 @@ function switchTab(i,el){
   }
 
   hideVariantPopup();
-  // Do NOT auto-focus #ta on tab switch — calling ta.focus() on an empty
-  // contenteditable in Safari triggers the phantom-div bug.
-  // The cursor position is preserved from wherever it was.
+  // Restore cursor to end when TA has content.
+  // The Safari phantom-div bug ONLY fires on an empty contenteditable,
+  // so calling focus()+collapse-to-end is safe whenever content exists.
+  const ta=TA();
+  if(ta.textContent.replace(/\u200B/g,'').trim().length>0){
+    requestAnimationFrame(ensureFocusAtEnd);
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -902,20 +942,30 @@ const GV={
 };
 
 /* ════════════════════════════════════════════════════════════
-   TOUCH HELPER — FIX #2: require lift (touchend), cancel if scrolled >8px
+   TOUCH HELPER — fires on touchend, cancels on scroll >8px
+   Shows popup for ALL symbol keys (Greek, operators, indices, etc.)
 ════════════════════════════════════════════════════════════ */
 function addTapHandler(el, onTap, onLongPress=null, longMs=440){
   let tsx,tsy,moved=false,timer=null,longFired=false;
+  // Determine if popup is appropriate: skip for long expression cards
+  const isCard=el.classList.contains('ec');
 
   el.addEventListener('touchstart',e=>{
     e.preventDefault();
     tsx=e.touches[0].clientX;tsy=e.touches[0].clientY;
     moved=false;longFired=false;
     el.classList.add('pressed');
+    // Show popup for symbol keys (not complex expression cards)
+    if(!isCard){
+      const txt=el.textContent;
+      const isSmall=txt.length>3||el.classList.contains('sm')||el.classList.contains('xsm');
+      showKeyPopup(el, el.innerHTML, isSmall);
+    }
     if(onLongPress){
       timer=setTimeout(()=>{
         longFired=true;
         el.classList.remove('pressed');
+        hideKeyPopup();
         onLongPress();
       },longMs);
     }
@@ -928,18 +978,21 @@ function addTapHandler(el, onTap, onLongPress=null, longMs=440){
       moved=true;
       if(timer){clearTimeout(timer);timer=null;}
       el.classList.remove('pressed');
+      hideKeyPopup();
     }
   },{passive:true});
 
   el.addEventListener('touchend',e=>{
     if(timer){clearTimeout(timer);timer=null;}
     el.classList.remove('pressed');
+    hideKeyPopup();
     if(!moved&&!longFired) onTap();
   });
 
   el.addEventListener('touchcancel',()=>{
     if(timer){clearTimeout(timer);timer=null;}
     el.classList.remove('pressed');
+    hideKeyPopup();
     moved=true;
   });
 }
@@ -1119,22 +1172,22 @@ function buildKB(){
           btn.addEventListener('touchstart',e=>{e.preventDefault();setKbMode('spec')},{passive:false});
         } else {
           const lower=key,upper=key.toUpperCase();
-          btn.classList.add('letter'); // marks as letter key for bubble CSS
+          btn.classList.add('letter');
           btn.dataset.lower=lower;btn.dataset.upper=upper;
-          btn.dataset.show=kbShift>0?upper:lower; // for ::after bubble
           btn.textContent=kbShift>0?upper:lower;
 
-          // iOS-style: visual feedback on touchstart, action fires on touchend
           btn.addEventListener('touchstart',e=>{
             e.preventDefault();
             btn.classList.add('pressed');
             const c=kbShift>0?upper:lower;
-            btn.dataset.show=c; // update bubble label
+            // Show iOS-style popup above the key
+            showKeyPopup(btn, escH(c), false);
           },{passive:false});
 
           btn.addEventListener('touchend',e=>{
             e.preventDefault();
-            if(!btn.classList.contains('pressed'))return; // was cancelled
+            hideKeyPopup();
+            if(!btn.classList.contains('pressed'))return;
             btn.classList.remove('pressed');
             const c=kbShift>0?upper:lower;
             insChar(c);
@@ -1143,6 +1196,7 @@ function buildKB(){
 
           btn.addEventListener('touchcancel',()=>{
             btn.classList.remove('pressed');
+            hideKeyPopup();
           });
         }
         rowDiv.appendChild(btn);
@@ -1313,5 +1367,7 @@ document.addEventListener('touchmove',e=>{
   if(!ok)e.preventDefault();
 },{passive:false});
 </script>
+<!-- Key popup (iOS-style bubble above pressed key) -->
+<div id="key-popup"><span id="key-popup-label"></span></div>
 </body>
 </html>
