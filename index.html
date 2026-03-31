@@ -174,6 +174,25 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
 .ec-s sup{font-size:.68em;vertical-align:super;line-height:0}
 .ec-n{font-size:9px;color:var(--dim);margin-top:3px;font-style:italic;display:block}
 
+/* ── Key callout popup (iOS-style, shown above any pressed key) ── */
+#key-popup{
+  position:fixed;z-index:5000;display:none;
+  align-items:center;justify-content:center;
+  background:#3d6040;color:var(--chalk);
+  border-radius:10px 10px 10px 10px;
+  font-family:var(--mono);font-size:22px;
+  min-width:44px;min-height:50px;padding:6px 10px;
+  box-shadow:0 3px 14px rgba(0,0,0,.65);
+  pointer-events:none;white-space:nowrap;
+  /* Triangle pointing down */
+}
+#key-popup::after{
+  content:'';position:absolute;top:100%;left:50%;
+  transform:translateX(-50%);
+  border:8px solid transparent;
+  border-top-color:#3d6040;
+  pointer-events:none;
+}
 /* ── Greek variants popup ── */
 #greek-popup{
   position:fixed;background:#1e3020;border:1.5px solid var(--grb);
@@ -229,37 +248,27 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
 
 /* iOS-style callout bubble that appears ABOVE key when pressed */
 .kb-key.pressed{
-  background:#3a5a3c;
+  background:#4a7a4b;
   box-shadow:none;
   transform:translateY(1px);
 }
-.s.pressed,.mkey.pressed,.vk.pressed{
-  background:var(--grd);border-color:var(--grb);transform:scale(.88);
-}
-
-/* ── Global key popup — appears above any pressed key ── */
-#key-popup{
-  position:fixed;z-index:5000;pointer-events:none;
-  display:none;flex-direction:column;
-  align-items:center;justify-content:center;
-  min-width:46px;height:56px;
-  background:#2d5030;
-  border-radius:10px 10px 4px 4px;
-  box-shadow:0 4px 18px rgba(0,0,0,.65);
-  padding:2px 12px 4px;
-}
-/* Letter in popup */
-#key-popup span{
-  font-family:var(--serif);font-size:28px;color:#fff;
-  line-height:1.2;display:block;
-}
-#key-popup span.sm{font-size:16px;font-family:var(--mono)}
-/* Downward arrow */
-#key-popup::after{
-  content:'';position:absolute;top:100%;left:50%;
-  transform:translateX(-50%);
-  border:8px solid transparent;border-top-color:#2d5030;
-  border-bottom:none;width:0;height:0;
+/* The bubble above — letter callout like iPhone */
+.kb-key.letter.pressed::after{
+  content:attr(data-show);
+  position:absolute;
+  bottom:calc(100% + 6px);
+  left:50%;transform:translateX(-50%);
+  min-width:42px;height:52px;
+  background:#4a7a4b;
+  border-radius:8px 8px 8px 8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:#fff;
+  box-shadow:0 2px 10px rgba(0,0,0,.6);
+  z-index:100;
+  pointer-events:none;
+  /* Trick: make ::after a flex box via display:flex doesn't work on pseudo-elements
+     so use padding instead */
+  padding:12px 8px 4px;
 }
 
 .kb-key.fn{background:var(--kb-fn);font-size:14px;font-family:var(--mono);
@@ -462,7 +471,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
 
 </div><!-- /app -->
 
-<!-- Popups -->
+<!-- Key callout popup (iOS-style bubble above pressed key) -->
+<div id="key-popup"></div>
+<!-- Greek variants popup -->
 <div id="greek-popup"></div>
 <div id="loupe"><div id="loupe-txt"></div></div>
 <div class="toast" id="toast"></div>
@@ -570,13 +581,11 @@ function ensureFocus(){
 }
 
 /* ════════════════════════════════════════════════════════════
-   INSERT EXPRESSION — reliable baseline reset
-   After insertHTML the cursor is INSIDE the last <sup>/<sub>.
-   We fix this by creating a TEXT NODE as a DIRECT CHILD of #ta,
-   which is guaranteed to be at the root/baseline level.
-   A regular space ' ' is used so there is visual separation.
+   INSERT EXPRESSION — two modes
+   • insSymbol(str)  — individual symbol keys: baseline reset, NO extra space
+   • insExprCard(str)— expression cards: baseline reset + ONE space after
 ════════════════════════════════════════════════════════════ */
-function insExprRaw(str){
+function _baselineInsert(str, addSpace){
   hideVariantPopup();
   ensureFocus();
   const ta=TA();
@@ -588,32 +597,36 @@ function insExprRaw(str){
   let anchorNode=null;
   if(sel&&sel.rangeCount){
     let node=sel.getRangeAt(0).startContainer;
-    // Walk up DOM until node is a direct child of ta
     while(node&&node.parentNode!==ta) node=node.parentNode;
     anchorNode=node;
   }
 
-  // Create an INVISIBLE zero-width text node directly in #ta (not inside sub/sup).
-  // \u200B has no visual width so no extra space appears between symbol taps.
-  // It IS stripped in getForCopy() so the copied text stays clean.
-  const spacer=document.createTextNode('\u200B');
+  // Create anchor text node as DIRECT CHILD of ta (guarantees baseline)
+  const anchor=document.createTextNode(addSpace?' ':'\u200B');
   if(anchorNode&&anchorNode!==ta&&anchorNode.nextSibling){
-    ta.insertBefore(spacer,anchorNode.nextSibling);
+    ta.insertBefore(anchor,anchorNode.nextSibling);
   } else {
-    ta.appendChild(spacer);
+    ta.appendChild(anchor);
   }
 
-  // Place cursor INSIDE the spacer text node (after the space)
-  // This guarantees baseline rendering for subsequent characters
-  const newSel=window.getSelection();
-  const newRange=document.createRange();
-  newRange.setStart(spacer,1); // position 1 = after the space
-  newRange.collapse(true);
-  newSel.removeAllRanges();
-  newSel.addRange(newRange);
-
+  // Place cursor after the anchor
+  const ns=window.getSelection();
+  const nr=document.createRange();
+  nr.setStart(anchor, anchor.length);
+  nr.collapse(true);
+  ns.removeAllRanges();
+  ns.addRange(nr);
   scrollToBottom();
 }
+
+/* Called from individual symbol grids — no trailing space */
+function insSymbol(str){ _baselineInsert(str, false); }
+
+/* Called from expression cards — ONE space after the expression */
+function insExprCard(str){ _baselineInsert(str, true); }
+
+/* Legacy alias used by variant popup */
+function insExprRaw(str){ insSymbol(str); }
 
 /* FIX #2: always scroll the text box to show the latest text */
 function scrollToBottom(){
@@ -708,30 +721,6 @@ function showToast(msg){
 }
 
 /* ════════════════════════════════════════════════════════════
-   KEY POPUP — iOS-style bubble above pressed key
-   Works for ALL key types: writing keyboard, symbol grids,
-   Greek letters, operators, math bar.
-════════════════════════════════════════════════════════════ */
-const _kpEl=document.getElementById('key-popup');
-const _kpLbl=document.getElementById('key-popup-label');
-
-function showKeyPopup(el, labelHTML, isSmall=false){
-  const rect=el.getBoundingClientRect();
-  const pw=Math.max(46, rect.width+4);
-  _kpLbl.innerHTML=labelHTML;
-  _kpLbl.className=isSmall?'sm':'';
-  _kpEl.style.width=pw+'px';
-  _kpEl.style.display='flex';
-  let lx=rect.left+rect.width/2-pw/2;
-  let ly=rect.top-64;
-  lx=Math.max(4,Math.min(lx,window.innerWidth-pw-4));
-  ly=Math.max(56,ly); // don't go above header
-  _kpEl.style.left=lx+'px';
-  _kpEl.style.top=ly+'px';
-}
-function hideKeyPopup(){_kpEl.style.display='none';}
-
-/* ════════════════════════════════════════════════════════════
    TABS
    FIX #1: toggle panels vs keyboard section
    FIX #3: cursor always stays at end
@@ -749,10 +738,24 @@ function switchTab(i,el){
   const mathbarEl=document.getElementById('mathbar');
 
   if(isKb){
-    // FIX #1: keyboard at bottom, panels hidden
     kbSec.style.display='';
     panelsEl.style.display='none';
     mathbarEl.style.display='none';
+    // FIX 2: restore cursor at end when switching back to Escritura.
+    // Only focus if ta already has content (avoids phantom-div on empty).
+    const ta=TA();
+    const hasContent=ta.textContent.replace(/\u200B/g,'').trim()!=='';
+    if(hasContent){
+      requestAnimationFrame(()=>{
+        ta.focus();
+        const sel=window.getSelection();
+        const r=document.createRange();
+        r.selectNodeContents(ta);
+        r.collapse(false); // cursor at end
+        sel.removeAllRanges();
+        sel.addRange(r);
+      });
+    }
   } else {
     kbSec.style.display='none';
     panelsEl.style.display='';
@@ -762,13 +765,9 @@ function switchTab(i,el){
   }
 
   hideVariantPopup();
-  // Restore cursor to end when TA has content.
-  // The Safari phantom-div bug ONLY fires on an empty contenteditable,
-  // so calling focus()+collapse-to-end is safe whenever content exists.
-  const ta=TA();
-  if(ta.textContent.replace(/\u200B/g,'').trim().length>0){
-    requestAnimationFrame(ensureFocusAtEnd);
-  }
+  // Do NOT auto-focus #ta on tab switch — calling ta.focus() on an empty
+  // contenteditable in Safari triggers the phantom-div bug.
+  // The cursor position is preserved from wherever it was.
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -942,25 +941,40 @@ const GV={
 };
 
 /* ════════════════════════════════════════════════════════════
-   TOUCH HELPER — fires on touchend, cancels on scroll >8px
-   Shows popup for ALL symbol keys (Greek, operators, indices, etc.)
+   KEY CALLOUT POPUP — iOS-style bubble above pressed key
 ════════════════════════════════════════════════════════════ */
-function addTapHandler(el, onTap, onLongPress=null, longMs=440){
+const kpEl=document.getElementById('key-popup');
+
+function showKeyPopup(anchor, label){
+  if(!label||!kpEl)return;
+  kpEl.innerHTML=exprToHTML(label);
+  kpEl.style.display='flex';
+  const rect=anchor.getBoundingClientRect();
+  const kw=Math.max(rect.width, 44);
+  let lx=rect.left+rect.width/2-kw/2;
+  lx=Math.max(4,Math.min(lx,window.innerWidth-kw-4));
+  const ly=rect.top-62;
+  kpEl.style.left=lx+'px';
+  kpEl.style.top=Math.max(2,ly)+'px';
+  kpEl.style.minWidth=kw+'px';
+}
+function hideKeyPopup(){
+  if(kpEl)kpEl.style.display='none';
+}
+
+/* ════════════════════════════════════════════════════════════
+   TOUCH HELPER — fires on touchend, cancels if scrolled >8px
+   popupLabel: text shown in callout bubble above key
+════════════════════════════════════════════════════════════ */
+function addTapHandler(el, onTap, onLongPress=null, longMs=440, popupLabel=''){
   let tsx,tsy,moved=false,timer=null,longFired=false;
-  // Determine if popup is appropriate: skip for long expression cards
-  const isCard=el.classList.contains('ec');
 
   el.addEventListener('touchstart',e=>{
     e.preventDefault();
     tsx=e.touches[0].clientX;tsy=e.touches[0].clientY;
     moved=false;longFired=false;
     el.classList.add('pressed');
-    // Show popup for symbol keys (not complex expression cards)
-    if(!isCard){
-      const txt=el.textContent;
-      const isSmall=txt.length>3||el.classList.contains('sm')||el.classList.contains('xsm');
-      showKeyPopup(el, el.innerHTML, isSmall);
-    }
+    if(popupLabel) showKeyPopup(el,popupLabel);
     if(onLongPress){
       timer=setTimeout(()=>{
         longFired=true;
@@ -1010,15 +1024,16 @@ function buildGrid(id,syms,isGreek=false){
     if(sym.length>10)cls.push('xsm');
     if(isGreek&&GV[sym]&&GV[sym].length>1)cls.push('has-var');
     d.className=cls.join(' ');
-    d.innerHTML=exprToHTML(sym); // FIX #4 display: renders sub/sup in keys too
+    d.innerHTML=exprToHTML(sym);
 
     if(isGreek&&GV[sym]&&GV[sym].length>1){
       addTapHandler(d,
-        ()=>insExprRaw(sym),
-        ()=>showVariantPopup(sym,d)
+        ()=>insSymbol(sym),
+        ()=>showVariantPopup(sym,d),
+        440, sym
       );
     } else {
-      addTapHandler(d,()=>insExprRaw(sym));
+      addTapHandler(d,()=>insSymbol(sym),null,440,sym);
     }
     el.appendChild(d);
   });
@@ -1031,7 +1046,8 @@ function buildExprs(id,arr,cls=''){
     const d=document.createElement('div');
     d.className='ec'+(cls?' '+cls:'');
     d.innerHTML=`<span class="ec-s">${exprToHTML(x.s)}</span><span class="ec-n">${x.n}</span>`;
-    addTapHandler(d,()=>insExprRaw(x.s));
+    // Expression cards: use insExprCard (adds trailing space + popup feedback)
+    addTapHandler(d,()=>insExprCard(x.s),null,440,x.n);
     el.appendChild(d);
   });
 }
@@ -1090,7 +1106,8 @@ function buildMathBar(){
     const k=document.createElement('div');
     k.className='mkey'+(l==='_sp_'?' sp':'');
     k.textContent=l==='_sp_'?'espacio':l;
-    addTapHandler(k,()=>insChar(v));
+    const lbl=l==='_sp_'?'':l;
+    addTapHandler(k,()=>insChar(v),null,440,lbl);
     bar.appendChild(k);
   });
 }
@@ -1172,23 +1189,25 @@ function buildKB(){
           btn.addEventListener('touchstart',e=>{e.preventDefault();setKbMode('spec')},{passive:false});
         } else {
           const lower=key,upper=key.toUpperCase();
-          btn.classList.add('letter');
+          btn.classList.add('letter'); // marks as letter key for bubble CSS
           btn.dataset.lower=lower;btn.dataset.upper=upper;
+          btn.dataset.show=kbShift>0?upper:lower; // for ::after bubble
           btn.textContent=kbShift>0?upper:lower;
 
+          // iOS-style: visual feedback on touchstart, action fires on touchend
           btn.addEventListener('touchstart',e=>{
             e.preventDefault();
             btn.classList.add('pressed');
             const c=kbShift>0?upper:lower;
-            // Show iOS-style popup above the key
-            showKeyPopup(btn, escH(c), false);
+            btn.dataset.show=c;
+            showKeyPopup(btn, c);
           },{passive:false});
 
           btn.addEventListener('touchend',e=>{
             e.preventDefault();
-            hideKeyPopup();
             if(!btn.classList.contains('pressed'))return;
             btn.classList.remove('pressed');
+            hideKeyPopup();
             const c=kbShift>0?upper:lower;
             insChar(c);
             if(kbShift===1){kbShift=0;updateShiftDisplay();}
@@ -1367,7 +1386,5 @@ document.addEventListener('touchmove',e=>{
   if(!ok)e.preventDefault();
 },{passive:false});
 </script>
-<!-- Key popup (iOS-style bubble above pressed key) -->
-<div id="key-popup"><span id="key-popup-label"></span></div>
 </body>
 </html>
