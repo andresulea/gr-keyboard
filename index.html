@@ -66,15 +66,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
   font-style:italic;font-size:13px;pointer-events:none}
 #ta sub{font-size:.65em;vertical-align:sub;line-height:0}
 #ta sup{font-size:.65em;vertical-align:super;line-height:0}
-/* Neutralise Safari's automatic <div> wrapping inside contenteditable.
-   Safari wraps insertHTML content in a <div> when the element is block-mode.
-   Making those divs inline prevents phantom line-breaks after each insert. */
-#ta > div { display:inline }
-
-/* Index mode toggle buttons (^  and  _) in mathbar */
-.mkey.idx{flex:0 0 34px;font-weight:700;font-size:16px;transition:background .1s,color .1s,border-color .1s}
-.mkey.idx.sup-on{background:var(--grd);border-color:var(--grb);color:var(--gr)}
-.mkey.idx.sub-on{background:var(--god);border-color:var(--gob);color:var(--go)}
 
 /* ── Action buttons ── */
 .acts{display:flex;gap:5px;margin-top:7px}
@@ -139,7 +130,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
 .mkey.pressed{background:var(--grd);border-color:var(--grb)}
 
 /* ── Symbol panels (flex:1, scrollable) ── */
-.panels{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 10px 20px}
+.panels{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 10px 20px;
+  /* IMPORTANT: allow native iOS momentum scroll */
+  overscroll-behavior:contain;}
 .panel{display:none}.panel.on{display:block}
 .sec{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
   color:var(--faint);margin:12px 0 5px 2px}
@@ -155,14 +148,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
   background:var(--s2);border:1px solid var(--bdr);border-radius:7px;
   font-family:var(--mono);font-size:18px;color:var(--chalk);
   -webkit-user-select:none;user-select:none;padding:0 3px;position:relative;
-  /* FIX #2: no immediate action on touch-down */
+  transition:background .06s, border-color .06s;
 }
 .s.sm{font-size:11px;letter-spacing:-.02em;text-align:center;padding:2px 4px;line-height:1.25}
 .s.xsm{font-size:9.5px}
-.s.pressed{background:var(--grd);border-color:var(--grb);transform:scale(.88)}
-.s.go.pressed{background:var(--god);border-color:var(--gob)}
-.s.bl.pressed{background:var(--bld);border-color:var(--blb)}
-.s.vi.pressed{background:var(--vid);border-color:var(--vib)}
+/* iOS-style: subtle highlight, NO scale */
+.s.pressed{background:rgba(92,184,92,.22);border-color:var(--grb);}
+.s.go.pressed{background:rgba(201,150,58,.22);border-color:var(--gob)}
+.s.bl.pressed{background:rgba(74,158,206,.22);border-color:var(--blb)}
+.s.vi.pressed{background:rgba(155,126,203,.22);border-color:var(--vib)}
 /* Triangle hint for Greek variants */
 .s.has-var::after{content:'';position:absolute;top:3px;right:3px;
   width:4px;height:4px;border-right:2px solid var(--grb);border-top:2px solid var(--grb)}
@@ -173,15 +167,27 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--chalk);fo
 /* Expression cards */
 .egrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .ec{padding:9px 10px;background:var(--s2);border:1px solid var(--bdr);
-  border-radius:8px;cursor:pointer;-webkit-user-select:none;user-select:none}
-.ec.pressed{background:var(--grd);border-color:var(--grb)}
-.ec.go.pressed{background:var(--god);border-color:var(--gob)}
-.ec.bl.pressed{background:var(--bld);border-color:var(--blb)}
-.ec.vi.pressed{background:var(--vid);border-color:var(--vib)}
+  border-radius:8px;cursor:pointer;-webkit-user-select:none;user-select:none;
+  transition:background .06s, border-color .06s;}
+.ec.pressed{background:rgba(92,184,92,.18);border-color:var(--grb)}
+.ec.go.pressed{background:rgba(201,150,58,.18);border-color:var(--gob)}
+.ec.bl.pressed{background:rgba(74,158,206,.18);border-color:var(--blb)}
+.ec.vi.pressed{background:rgba(155,126,203,.18);border-color:var(--vib)}
 .ec-s{font-family:var(--mono);font-size:11.5px;color:var(--chalk);display:block;line-height:1.5}
 .ec-s sub{font-size:.68em;vertical-align:sub;line-height:0}
 .ec-s sup{font-size:.68em;vertical-align:super;line-height:0}
 .ec-n{font-size:9px;color:var(--dim);margin-top:3px;font-style:italic;display:block}
+
+/* ── SUP/SUB MODE BUTTONS ── */
+.mkey.mode-btn{flex:1.2;font-size:13px;font-weight:700;letter-spacing:.02em}
+.mkey.mode-on{
+  background:rgba(92,184,92,.25);border-color:var(--gr);color:var(--gr);
+  box-shadow:inset 0 0 0 1px var(--gr);
+}
+.mkey.mode-lock{
+  background:rgba(92,184,92,.4);border-color:var(--gr);color:var(--gr);
+  box-shadow:inset 0 0 0 2px var(--gr);
+}
 
 /* ── Key callout popup (iOS-style, shown above any pressed key) ── */
 #key-popup{
@@ -529,184 +535,203 @@ function exprToHTML(str){
 }
 
 /* ════════════════════════════════════════════════════════════
-   SAVED RANGE — tracks cursor even when #ta loses focus.
-   Symbol inserts always land at the exact cursor position,
-   never at the start or end of content.
+   CURSOR TRACKING — save selection whenever it changes inside #ta
+   This lets us restore the EXACT cursor position before each insert,
+   regardless of which tab is active (tab switches don't move cursor).
 ════════════════════════════════════════════════════════════ */
 let savedRange = null;
 
 document.addEventListener('selectionchange', () => {
-  const ta = TA(), sel = window.getSelection();
-  if(sel && sel.rangeCount){
-    try{
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    try {
       const r = sel.getRangeAt(0);
-      if(ta.contains(r.commonAncestorContainer)) savedRange = r.cloneRange();
-    }catch(e){}
+      if (TA().contains(r.startContainer)) {
+        savedRange = r.cloneRange();
+      }
+    } catch(e) {}
   }
 });
 
-/* Safari phantom-div cleanup on focus */
+/* ════════════════════════════════════════════════════════════
+   FOCUS MANAGEMENT
+════════════════════════════════════════════════════════════ */
+/* Safari iOS inserts <div><br></div> into a focused empty contenteditable. */
 function cleanSafariEmptyDiv(){
   const ta = TA();
-  if(ta.innerHTML==='<div><br></div>'||ta.innerHTML==='<div></div>'||ta.innerHTML==='<br>'){
+  if (ta.innerHTML === '<div><br></div>' ||
+      ta.innerHTML === '<div></div>'     ||
+      ta.innerHTML === '<br>') {
     ta.innerHTML = '';
     const sel = window.getSelection();
     const r = document.createRange();
-    r.setStart(ta,0); r.collapse(true);
+    r.setStart(ta, 0); r.collapse(true);
     sel.removeAllRanges(); sel.addRange(r);
     savedRange = r.cloneRange();
   }
 }
 
-function ensureFocusAtEnd(){
-  const ta = TA(); ta.focus();
+/* Restore the saved cursor range into #ta.
+   Returns true if successfully restored, false if fallback needed. */
+function restoreSavedRange() {
+  const ta = TA();
+  if (!savedRange) return false;
+  try {
+    // Validate that the saved range is still inside #ta
+    if (!ta.contains(savedRange.startContainer)) return false;
+    ta.focus({preventScroll: true});
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange.cloneRange());
+    return true;
+  } catch(e) { return false; }
+}
+
+/* Place cursor at the very end of #ta content */
+function focusAtEnd() {
+  const ta = TA();
+  ta.focus({preventScroll: true});
+  const sel = window.getSelection();
   const r = document.createRange();
   r.selectNodeContents(ta); r.collapse(false);
-  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  sel.removeAllRanges(); sel.addRange(r);
   savedRange = r.cloneRange();
 }
 
-/* ════════════════════════════════════════════════════════════
-   DOM INSERT — uses Range.insertNode so no ta.focus() is needed.
-   Avoids Safari's <div> wrapping from execCommand('insertHTML').
-════════════════════════════════════════════════════════════ */
-function domInsertFrag(range, html){
-  range.deleteContents();
-  const tmp = document.createElement('span');
-  tmp.innerHTML = html;
-  const frag = document.createDocumentFragment();
-  let last = null;
-  while(tmp.firstChild){ last = tmp.firstChild; frag.appendChild(last); }
-  range.insertNode(frag);
-  const r = document.createRange();
-  if(last){ r.setStartAfter(last); } else { r.setStart(range.startContainer, range.startOffset); }
-  r.collapse(true);
-  return r;
-}
+function ensureFocusAtEnd(){ focusAtEnd(); }
 
-function getRestoreRange(){
+function ensureFocus(){
   const ta = TA();
-  if(savedRange){
-    try{
-      if(ta.contains(savedRange.commonAncestorContainer))
-        return savedRange.cloneRange();
-    }catch(e){}
+  if (document.activeElement !== ta) {
+    const restored = restoreSavedRange();
+    if (!restored) focusAtEnd();
+    requestAnimationFrame(cleanSafariEmptyDiv);
   }
-  const r = document.createRange();
-  r.selectNodeContents(ta); r.collapse(false);
-  return r;
 }
 
 /* ════════════════════════════════════════════════════════════
-   INSERT — two modes
-   insSymbol : individual keys — no extra space
-   insExprCard: full expression cards — adds one trailing space
+   SUP / SUB MODE — sticky toggle for super/subscript input
+   null = off  'sup'/'sub' = one-shot  'sup-lock'/'sub-lock' = sticky
 ════════════════════════════════════════════════════════════ */
-function _baselineInsert(str, addSpace){
+let subSupMode = null;
+
+function toggleSubSupMode(which) {
+  if (subSupMode === which + '-lock') {
+    subSupMode = null;
+  } else if (subSupMode === which) {
+    subSupMode = which + '-lock'; // double-tap = sticky
+  } else {
+    subSupMode = which;
+  }
+  _refreshModeButtons();
+}
+
+function _refreshModeButtons() {
+  const supBtn = document.getElementById('mbtn-sup');
+  const subBtn = document.getElementById('mbtn-sub');
+  if (!supBtn || !subBtn) return;
+  supBtn.className = 'mkey mode-btn' +
+    (subSupMode === 'sup' ? ' mode-on' : subSupMode === 'sup-lock' ? ' mode-lock' : '');
+  subBtn.className = 'mkey mode-btn' +
+    (subSupMode === 'sub' ? ' mode-on' : subSupMode === 'sub-lock' ? ' mode-lock' : '');
+}
+
+/* ════════════════════════════════════════════════════════════
+   INSERT — cursor-position-aware, mode-aware
+   • insSymbol(str)   — single symbol: insert at cursor, no trailing space
+   • insExprCard(str) — full expression: insert at cursor + one space
+════════════════════════════════════════════════════════════ */
+function _baselineInsert(str, addSpace) {
   hideVariantPopup();
   const ta = TA();
-  const range = getRestoreRange();
+
+  // Step 1: restore cursor to where user left it
+  const restored = restoreSavedRange();
+  if (!restored) {
+    ta.focus({preventScroll:true});
+    if (!window.getSelection().rangeCount) focusAtEnd();
+    requestAnimationFrame(cleanSafariEmptyDiv);
+  }
+
+  // Step 2: wrap with sup/sub if mode is active
+  let html = exprToHTML(str);
+  const mode = subSupMode ? subSupMode.replace('-lock','') : null;
+  if (mode === 'sup') html = `<sup>${html}</sup>`;
+  else if (mode === 'sub') html = `<sub>${html}</sub>`;
+
+  // Step 3: insert HTML
+  document.execCommand('insertHTML', false, html);
+
+  // Step 4: insert baseline anchor as DIRECT CHILD of ta
+  // Walk up from cursor to find direct child of ta
   const sel = window.getSelection();
-  sel.removeAllRanges(); sel.addRange(range);
+  let anchorNode = null;
+  if (sel && sel.rangeCount) {
+    let node = sel.getRangeAt(0).startContainer;
+    while (node && node.parentNode !== ta) node = node.parentNode;
+    anchorNode = node;
+  }
+  const anch = document.createTextNode(addSpace ? ' ' : '\u200B');
+  if (anchorNode && anchorNode !== ta && anchorNode.nextSibling) {
+    ta.insertBefore(anch, anchorNode.nextSibling);
+  } else {
+    ta.appendChild(anch);
+  }
 
-  // Insert via DOM (cursor stays at exact saved position)
-  let cur = domInsertFrag(range, exprToHTML(str));
-
-  // Walk to direct child of ta, append baseline anchor there
-  let node = cur.startContainer;
-  while(node && node.parentNode !== ta) node = node.parentNode;
-
-  const anchor = document.createTextNode(addSpace ? ' ' : '\u200B');
-  if(node && node !== ta && node.nextSibling) ta.insertBefore(anchor, node.nextSibling);
-  else ta.appendChild(anchor);
-
+  // Step 5: position cursor right after the anchor
   const nr = document.createRange();
-  nr.setStart(anchor, anchor.length); nr.collapse(true);
-  sel.removeAllRanges(); sel.addRange(nr);
-  savedRange = nr.cloneRange();
+  nr.setStart(anch, anch.length); nr.collapse(true);
+  const ns = window.getSelection();
+  ns.removeAllRanges(); ns.addRange(nr);
+  savedRange = nr.cloneRange(); // update saved range
+
+  // Step 6: auto-deactivate one-shot mode (not locked)
+  if (subSupMode && !subSupMode.includes('lock')) {
+    subSupMode = null;
+    _refreshModeButtons();
+  }
+
   scrollToBottom();
 }
 
-/* ── Super / Sub index mode ─────────────────────────────── */
-let indexMode = null; // null | 'sup' | 'sub'
+function insSymbol(str)   { _baselineInsert(str, false); }
+function insExprCard(str) { _baselineInsert(str, true);  }
+function insExprRaw(str)  { insSymbol(str); }
 
-function toggleIndexMode(mode){
-  const ta = TA();
-  if(indexMode === mode){
-    // Turn off — exit to baseline
-    indexMode = null;
-    const range = getRestoreRange();
-    let node = range.startContainer;
-    while(node && node.parentNode !== ta) node = node.parentNode;
-    const anchor = document.createTextNode('\u200B');
-    if(node && node !== ta && node.nextSibling) ta.insertBefore(anchor, node.nextSibling);
-    else ta.appendChild(anchor);
-    const nr = document.createRange();
-    nr.setStart(anchor, anchor.length); nr.collapse(true);
-    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(nr);
-    savedRange = nr.cloneRange();
-  } else {
-    indexMode = mode;
-    // Open a new sup/sub at cursor, move cursor inside
-    const range = getRestoreRange();
-    const el = document.createElement(mode);
-    el.appendChild(document.createTextNode(''));
-    range.deleteContents(); range.insertNode(el);
-    const nr = document.createRange();
-    nr.setStart(el, 0); nr.collapse(true);
-    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(nr);
-    savedRange = nr.cloneRange();
-  }
-  updateIdxUI();
-}
-
-function updateIdxUI(){
-  const s = document.getElementById('idx-sup');
-  const b = document.getElementById('idx-sub');
-  if(s) s.classList.toggle('sup-on', indexMode==='sup');
-  if(b) b.classList.toggle('sub-on', indexMode==='sub');
-}
-
-function insSymbol(str){
-  if(indexMode){
-    // Stay inside active sup/sub
-    const ta = TA();
-    const range = getRestoreRange();
-    const sel = window.getSelection();
-    sel.removeAllRanges(); sel.addRange(range);
-    const nr = domInsertFrag(range, exprToHTML(str));
-    sel.removeAllRanges(); sel.addRange(nr);
-    savedRange = nr.cloneRange();
-    scrollToBottom();
-  } else {
-    _baselineInsert(str, false);
-  }
-}
-function insExprCard(str){ _baselineInsert(str, true); }
-function insExprRaw(str){ insSymbol(str); }
-
-/* ═══════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   SCROLL
+════════════════════════════════════════════════════════════ */
 function scrollToBottom(){
   const ta = TA();
-  requestAnimationFrame(()=>{ ta.scrollTop = ta.scrollHeight; });
+  requestAnimationFrame(() => { ta.scrollTop = ta.scrollHeight; });
 }
 
 function insChar(c){
-  const ta = TA();
-  if(document.activeElement !== ta) ta.focus();
+  // For keyboard keys, we need to insert into ta wherever cursor is
+  const restored = restoreSavedRange();
+  if (!restored) {
+    const ta = TA();
+    ta.focus({preventScroll:true});
+    if (!window.getSelection().rangeCount) focusAtEnd();
+  }
   document.execCommand('insertText', false, c);
+  // Update savedRange after insert
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
   scrollToBottom();
 }
 
 function doBksp(){
-  const ta = TA();
-  if(document.activeElement !== ta) ta.focus();
+  const restored = restoreSavedRange();
+  if (!restored) { const ta=TA(); ta.focus({preventScroll:true}); }
   document.execCommand('delete');
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
 }
 
 function doClear(){
   TA().innerHTML='';
-  indexMode = null; updateIdxUI();
+  savedRange = null;
   document.getElementById('aip').classList.remove('on');
 }
 
@@ -779,19 +804,14 @@ function switchTab(i,el){
     kbSec.style.display='';
     panelsEl.style.display='none';
     mathbarEl.style.display='none';
-    // FIX 2: restore cursor at end when switching back to Escritura.
-    // Only focus if ta already has content (avoids phantom-div on empty).
+    // When returning to Escritura, restore cursor to where it was (savedRange).
+    // Only do this if ta has content, to avoid Safari phantom-div on empty ta.
     const ta=TA();
     const hasContent=ta.textContent.replace(/\u200B/g,'').trim()!=='';
     if(hasContent){
       requestAnimationFrame(()=>{
-        ta.focus();
-        const sel=window.getSelection();
-        const r=document.createRange();
-        r.selectNodeContents(ta);
-        r.collapse(false); // cursor at end
-        sel.removeAllRanges();
-        sel.addRange(r);
+        const restored=restoreSavedRange();
+        if(!restored) focusAtEnd();
       });
     }
   } else {
@@ -979,69 +999,19 @@ const GV={
 };
 
 /* ════════════════════════════════════════════════════════════
-   TOUCH HELPER — scroll-safe, iOS-style
-   • passive touchstart so vertical scroll is NEVER blocked
-   • highlight only appears after 100 ms of no scroll movement
-   • touchend fires the action if no scroll occurred
-════════════════════════════════════════════════════════════ */
-function addTapHandler(el, onTap, onLongPress=null, longMs=440, popupLabel=''){
-  let tsx,tsy,moved=false,longFired=false;
-  let hlTimer=null,longTimer=null;
-
-  el.addEventListener('touchstart', e=>{
-    tsx=e.touches[0].clientX; tsy=e.touches[0].clientY;
-    moved=false; longFired=false;
-
-    // Delay highlight so fast scrolls don't flash the key
-    hlTimer = setTimeout(()=>{
-      if(!moved){
-        el.classList.add('pressed');
-        if(popupLabel) showKeyPopup(el, popupLabel);
-      }
-    }, 90);
-
-    if(onLongPress){
-      longTimer = setTimeout(()=>{
-        if(!moved){
-          longFired=true;
-          el.classList.remove('pressed'); hideKeyPopup();
-          onLongPress();
-        }
-      }, longMs);
-    }
-  }, {passive:true}); // passive = browser can scroll without waiting
-
-  el.addEventListener('touchmove', e=>{
-    const dx=e.touches[0].clientX-tsx, dy=e.touches[0].clientY-tsy;
-    if(Math.abs(dy)>5 || Math.abs(dx)>12){
-      moved=true;
-      if(hlTimer){ clearTimeout(hlTimer); hlTimer=null; }
-      if(longTimer){ clearTimeout(longTimer); longTimer=null; }
-      el.classList.remove('pressed'); hideKeyPopup();
-    }
-  }, {passive:true});
-
-  el.addEventListener('touchend', e=>{
-    if(hlTimer){ clearTimeout(hlTimer); hlTimer=null; }
-    if(longTimer){ clearTimeout(longTimer); longTimer=null; }
-    el.classList.remove('pressed'); hideKeyPopup();
-    if(!moved && !longFired) onTap();
-  });
-
-/* ════════════════════════════════════════════════════════════
    KEY CALLOUT POPUP — iOS-style bubble above pressed key
 ════════════════════════════════════════════════════════════ */
 const kpEl=document.getElementById('key-popup');
 
 function showKeyPopup(anchor, label){
   if(!label||!kpEl)return;
-  kpEl.innerHTML=exprToHTML(label);
+  kpEl.innerHTML=exprToHTML(String(label));
   kpEl.style.display='flex';
   const rect=anchor.getBoundingClientRect();
-  const kw=Math.max(rect.width, 44);
+  const kw=Math.max(rect.width+4, 48);
   let lx=rect.left+rect.width/2-kw/2;
   lx=Math.max(4,Math.min(lx,window.innerWidth-kw-4));
-  const ly=rect.top-62;
+  const ly=rect.top-66;
   kpEl.style.left=lx+'px';
   kpEl.style.top=Math.max(2,ly)+'px';
   kpEl.style.minWidth=kw+'px';
@@ -1051,48 +1021,67 @@ function hideKeyPopup(){
 }
 
 /* ════════════════════════════════════════════════════════════
-   TOUCH HELPER — fires on touchend, cancels if scrolled >8px
-   popupLabel: text shown in callout bubble above key
+   TOUCH HANDLER — iOS-authentic UX
+   • Passive listeners on touchstart/touchmove → native scroll ALWAYS works
+   • Press highlight appears only after 80ms (like iOS) — prevents highlight during scroll
+   • Action fires on touchend only if: no movement AND no long-press fired
+   • Long-press fires after longMs ms
 ════════════════════════════════════════════════════════════ */
-function addTapHandler(el, onTap, onLongPress=null, longMs=440, popupLabel=''){
-  let tsx,tsy,moved=false,timer=null,longFired=false;
+function addTapHandler(el, onTap, onLongPress=null, longMs=480, popupLabel=''){
+  let tsx,tsy,moved,pressTimer,longTimer,longFired,pressFired;
 
-  el.addEventListener('touchstart',e=>{
-    e.preventDefault();
-    tsx=e.touches[0].clientX;tsy=e.touches[0].clientY;
-    moved=false;longFired=false;
-    el.classList.add('pressed');
-    if(popupLabel) showKeyPopup(el,popupLabel);
+  function _reset(){
+    moved=false; longFired=false; pressFired=false;
+    pressTimer=null; longTimer=null;
+  }
+  _reset();
+
+  el.addEventListener('touchstart', e=>{
+    tsx=e.touches[0].clientX; tsy=e.touches[0].clientY;
+    _reset();
+
+    // Delay highlight by 80ms — if touch moves >5px before then, no highlight (it's a scroll)
+    pressTimer=setTimeout(()=>{
+      pressFired=true;
+      el.classList.add('pressed');
+      if(popupLabel) showKeyPopup(el, popupLabel);
+    }, 80);
+
+    // Long press timer
     if(onLongPress){
-      timer=setTimeout(()=>{
+      longTimer=setTimeout(()=>{
         longFired=true;
         el.classList.remove('pressed');
         hideKeyPopup();
         onLongPress();
-      },longMs);
+      }, longMs);
     }
-  },{passive:false});
+  }, {passive:true}); // PASSIVE — allows native iOS momentum scroll
 
-  el.addEventListener('touchmove',e=>{
+  el.addEventListener('touchmove', e=>{
     const dx=e.touches[0].clientX-tsx;
     const dy=e.touches[0].clientY-tsy;
-    if(Math.abs(dx)>8||Math.abs(dy)>8){
+    if(Math.abs(dx)>5 || Math.abs(dy)>5){
       moved=true;
-      if(timer){clearTimeout(timer);timer=null;}
+      // Cancel pending timers and clear any highlight
+      if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}
+      if(longTimer){clearTimeout(longTimer);longTimer=null;}
       el.classList.remove('pressed');
       hideKeyPopup();
     }
-  },{passive:true});
+  }, {passive:true}); // PASSIVE — crucial for smooth scroll
 
-  el.addEventListener('touchend',e=>{
-    if(timer){clearTimeout(timer);timer=null;}
+  el.addEventListener('touchend', ()=>{
+    if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}
+    if(longTimer){clearTimeout(longTimer);longTimer=null;}
     el.classList.remove('pressed');
     hideKeyPopup();
-    if(!moved&&!longFired) onTap();
+    if(!moved && !longFired) onTap();
   });
 
-  el.addEventListener('touchcancel',()=>{
-    if(timer){clearTimeout(timer);timer=null;}
+  el.addEventListener('touchcancel', ()=>{
+    if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}
+    if(longTimer){clearTimeout(longTimer);longTimer=null;}
     el.classList.remove('pressed');
     hideKeyPopup();
     moved=true;
@@ -1134,9 +1123,8 @@ function buildExprs(id,arr,cls=''){
     const d=document.createElement('div');
     d.className='ec'+(cls?' '+cls:'');
     d.innerHTML=`<span class="ec-s">${exprToHTML(x.s)}</span><span class="ec-n">${x.n}</span>`;
-    // Popup shows the formula (x.s) trimmed to 20 chars, not the full description
-    const lbl=x.s.length>20 ? x.s.slice(0,18)+'…' : x.s;
-    addTapHandler(d,()=>insExprCard(x.s),null,440,lbl);
+    // Expression cards: use insExprCard (adds trailing space + popup feedback)
+    addTapHandler(d,()=>insExprCard(x.s),null,440,x.n);
     el.appendChild(d);
   });
 }
@@ -1182,39 +1170,35 @@ document.addEventListener('touchstart',e=>{
 },{passive:true});
 
 /* ════════════════════════════════════════════════════════════
-   QUICK MATH BAR (shown on all symbol panels)
-   Includes ^ and _ sticky index-mode toggles at the left.
+   FIX #5: QUICK MATH BAR
 ════════════════════════════════════════════════════════════ */
 const MATH_BAR=[
+  // Mode toggles first — tap=one-shot, double-tap=sticky (like caps lock)
+  {l:'x^n', v:'sup', mode:true, id:'mbtn-sup'},
+  {l:'x_n', v:'sub', mode:true, id:'mbtn-sub'},
   {l:'=',v:'='},{l:'+',v:'+'},{l:'−',v:'−'},{l:'×',v:'×'},{l:'/',v:'/'},
-  {l:'(',v:'('},{l:')',v:')'},{l:'²',v:'²'},{l:'√',v:'√'},{l:'∞',v:'∞'},
-  {l:'_sp_',v:' '},
+  {l:'(',v:'('},{l:')',v:')'},{l:'²',v:'²'},{l:'√',v:'√'},
 ];
 function buildMathBar(){
   const bar=document.getElementById('mathbar');
-  bar.innerHTML='';
-
-  // ^ toggle
-  const sup=document.createElement('div');
-  sup.className='mkey idx'; sup.id='idx-sup'; sup.textContent='^';
-  sup.title='Superíndice: activa modo superíndice. Toca de nuevo para salir.';
-  sup.addEventListener('touchstart',e=>{e.preventDefault();toggleIndexMode('sup');},{passive:false});
-  bar.appendChild(sup);
-
-  // _ toggle
-  const sub=document.createElement('div');
-  sub.className='mkey idx'; sub.id='idx-sub'; sub.textContent='_';
-  sub.title='Subíndice: activa modo subíndice. Toca de nuevo para salir.';
-  sub.addEventListener('touchstart',e=>{e.preventDefault();toggleIndexMode('sub');},{passive:false});
-  bar.appendChild(sub);
-
-  // Regular math keys
-  MATH_BAR.forEach(({l,v})=>{
+  MATH_BAR.forEach(({l,v,mode,id})=>{
     const k=document.createElement('div');
-    k.className='mkey'+(l==='_sp_'?' sp':'');
-    k.textContent=l==='_sp_'?'espacio':l;
-    const lbl=l==='_sp_'?'':l;
-    addTapHandler(k,()=>insChar(v),null,440,lbl);
+    if(mode){
+      k.className='mkey mode-btn';
+      k.id=id;
+      // Render label: x^n or x_n nicely
+      if(v==='sup') k.innerHTML='x<sup style="font-size:.65em">n</sup>';
+      else          k.innerHTML='x<sub style="font-size:.65em">n</sub>';
+      k.addEventListener('touchend', e=>{
+        e.preventDefault();
+        toggleSubSupMode(v);
+      },{passive:false});
+    } else {
+      k.className='mkey';
+      k.textContent=l;
+      const lbl=l;
+      addTapHandler(k,()=>insChar(v),null,480,lbl);
+    }
     bar.appendChild(k);
   });
 }
@@ -1478,11 +1462,13 @@ buildKB();
 // Start on Escritura tab (keyboard at bottom, panels hidden) — NO auto-focus
 switchTab(0, document.querySelector('.tab'));
 
-// Safari phantom-div cleanup: fires on every focus of #ta
-// Must use requestAnimationFrame so Safari has time to insert its empty div
+// Safari phantom-div cleanup on every focus of #ta
 document.getElementById('ta').addEventListener('focusin',()=>{
   requestAnimationFrame(cleanSafariEmptyDiv);
 });
+
+// After mathbar + keyboard built, refresh mode buttons
+_refreshModeButtons();
 
 // Prevent native bounce scroll outside scrollable areas
 document.addEventListener('touchmove',e=>{
